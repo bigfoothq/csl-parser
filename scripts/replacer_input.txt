@@ -1,0 +1,68 @@
+=== PROCESSED: 2025-06-21 10:17:56 ===
+ERROR Block 1: No match found in /Users/stuart/repos/clada/clada/main/components/edit/main/core/test-unit/test/execute.test.js
+===
+
+The edit failed because the lazy range matching test already exists in the file from the first successful edit. Let me search for the correct insertion point:
+
+Let me examine the file directly to understand its current state and find the right insertion point:
+
+<<<EXPLANATION>>>
+
+Add the missing symlink rejection test case after the subdirectory test and before the path escape test
+
+<<<FILE>>>
+
+clada/main/components/edit/main/core/test-unit/test/execute.test.js
+
+<<<SEARCH>>>
+  it('handles path with subdirectory', () => {
+    mkdirSync(join(testDir, 'sub', 'dir'), { recursive: true });
+    writeFileSync(join(testDir, 'sub', 'dir', 'file.txt'), 'content');
+    
+    const result = executeEdit({
+      mode: 'exact',
+      path: 'sub/dir/file.txt',
+      search: 'content',
+      replace: 'new content',
+      count: 1
+    }, context);
+    
+    assert.deepEqual(result, { ok: true, value: undefined });
+    assert.equal(readFileSync(join(testDir, 'sub', 'dir', 'file.txt'), 'utf8'), 'new content');
+  });
+
+  it('prevents path escape attempts', () => {
+<<<REPLACE>>>
+  it('handles path with subdirectory', () => {
+    mkdirSync(join(testDir, 'sub', 'dir'), { recursive: true });
+    writeFileSync(join(testDir, 'sub', 'dir', 'file.txt'), 'content');
+    
+    const result = executeEdit({
+      mode: 'exact',
+      path: 'sub/dir/file.txt',
+      search: 'content',
+      replace: 'new content',
+      count: 1
+    }, context);
+    
+    assert.deepEqual(result, { ok: true, value: undefined });
+    assert.equal(readFileSync(join(testDir, 'sub', 'dir', 'file.txt'), 'utf8'), 'new content');
+  });
+
+  it('rejects symlink operations', () => {
+    writeFileSync(join(testDir, 'target.txt'), 'original content');
+    symlinkSync(join(testDir, 'target.txt'), join(testDir, 'link.txt'));
+    
+    const result = executeEdit({
+      mode: 'exact',
+      path: 'link.txt',
+      search: 'x',
+      replace: 'y',
+      count: 1
+    }, context);
+    
+    assert.deepEqual(result, { ok: false, error: 'symlink_not_allowed' });
+  });
+
+  it('prevents path escape attempts', () => {
+<<<END>>>
