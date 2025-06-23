@@ -1,81 +1,24 @@
-=== PROCESSED: 2025-06-23 01:21:52 ===
+=== PROCESSED: 2025-06-23 01:23:56 ===
 SUCCESS Block 1: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
 SUCCESS Block 2: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
-SUCCESS Block 3: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
-SUCCESS Block 4: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
-SUCCESS Block 5: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
-SUCCESS Block 6: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
-SUCCESS Block 7: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
-SUCCESS Block 8: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_reqs.md
-SUCCESS Block 9: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_reqs.md
-SUCCESS Block 10: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_reqs.md
 ===
 
-## Documentation Updates for Simplified State Design
+Two changes needed:
 
 <<<EXPLANATION>>>
-Replace complex state table with simplified state design using compound states
+Add TASKS entry behavior to state transition rules
 <<<FILE>>>
 csl-parser/main/core/doc/csl_imp.md
 <<<SEARCH>>>
-### State Management
-- Single state variable tracking current parse context
-- Operation stack for TASKS nesting (max depth 1)
-- Stack tracks return state (TOP_LEVEL or TASKS_LEVEL)
-- TASKS can contain WRITE, RUN, SEARCH (not other TASKS)
-- Content buffers per operation type:
-  - Single buffer: WRITE, RUN
-  - Triple buffer: SEARCH (pattern, to, replacement)
+When END marker encountered:
+- If `insideTasks` true and state is not TASKS: set state to TASKS
+- Otherwise: set state to null and insideTasks to false
+
+Invalid transitions throw immediately with line number.
 <<<REPLACE>>>
-### State Management
-- Single state variable with compound values:
-  - `null` (no active operation)
-  - `'WRITE'`
-  - `'RUN'`
-  - `'SEARCH_PATTERN'`
-  - `'SEARCH_TO'`
-  - `'SEARCH_REPLACEMENT'`
-  - `'TASKS'`
-- Boolean `insideTasks` tracks if currently inside TASKS block
-- No stack needed since TASKS cannot nest
-- Content buffers per operation type:
-  - Single buffer: WRITE, RUN
-  - Triple buffer: SEARCH (pattern, to, replacement)
-<<<END>>>
-
-<<<EXPLANATION>>>
-Remove complex state transition table and replace with simple validation rules
-<<<FILE>>>
-csl-parser/main/core/doc/csl_imp.md
-<<<SEARCH>>>
-### State Transition Validation
-
-State transition table:
-
-| Current State | Valid Next Markers | Next State |
-|--------------|-------------------|------------|
-| TOP_LEVEL | WRITE, RUN, SEARCH, TASKS | COLLECTING_[OPERATION] |
-| COLLECTING_WRITE | END | TOP_LEVEL or TASKS_LEVEL |
-| COLLECTING_RUN | END | TOP_LEVEL or TASKS_LEVEL |
-| COLLECTING_SEARCH | TO, REPLACE | COLLECTING_SEARCH_TO or COLLECTING_SEARCH_REPLACE |
-| COLLECTING_SEARCH_TO | REPLACE | COLLECTING_SEARCH_REPLACE |
-| COLLECTING_SEARCH_REPLACE | END | TOP_LEVEL or TASKS_LEVEL |
-| COLLECTING_TASKS | WRITE, RUN, SEARCH, END | TASKS_LEVEL or TOP_LEVEL |
-| TASKS_LEVEL | WRITE, RUN, SEARCH | COLLECTING_[OPERATION] |
-
-- Invalid transitions throw immediately
-- Track return state (TOP_LEVEL or TASKS_LEVEL) on operation stack
-<<<REPLACE>>>
-### State Transition Validation
-
-Valid transitions by current state:
-- `null`: Can start WRITE, RUN, SEARCH, or TASKS
-- `WRITE`: Only END valid
-- `RUN`: Only END valid
-- `SEARCH_PATTERN`: TO or REPLACE valid
-- `SEARCH_TO`: Only REPLACE valid
-- `SEARCH_REPLACEMENT`: Only END valid
-- `TASKS`: WRITE, RUN, SEARCH, or END valid
+When TASKS marker encountered:
+- If `insideTasks` true: throw error (nested TASKS)
+- Otherwise: set state to TASKS, set insideTasks to true
 
 When END marker encountered:
 - If `insideTasks` true and state is not TASKS: set state to TASKS
@@ -85,149 +28,16 @@ Invalid transitions throw immediately with line number.
 <<<END>>>
 
 <<<EXPLANATION>>>
-Update main parse loop to reflect simplified state management
+Add standard error message examples
 <<<FILE>>>
 csl-parser/main/core/doc/csl_imp.md
 <<<SEARCH>>>
-### Main Parse Loop
-1. Initialize state machine to TOP_LEVEL
-2. Initialize line counter to 1
-3. Process each line sequentially, increment counter after each
-4. For `<---` lines: attempt marker parse
-5. For successful markers: validate state transition
-6. For content lines: append to current buffer
-7. On END markers: complete current operation
-8. Return complete AST or throw error
+Invalid transitions throw immediately with line number.
 <<<REPLACE>>>
-### Main Parse Loop
-1. Initialize state to null, insideTasks to false
-2. Initialize line counter to 1
-3. Process each line sequentially, increment counter after each
-4. For `<---` lines: attempt marker parse
-5. For successful markers: validate state transition
-6. For content lines: append to current buffer
-7. On END markers: complete current operation, update state
-8. Return complete AST or throw error
-<<<END>>>
+Invalid transitions throw immediately with line number.
 
-<<<EXPLANATION>>>
-Add parser error format specification
-<<<FILE>>>
-csl-parser/main/core/doc/csl_imp.md
-<<<SEARCH>>>
-Parser errors:
-- Line number (1-indexed)
-- Error type classification
-- Descriptive message
-- No partial results returned
-- Thrown immediately
-<<<REPLACE>>>
-Parser errors:
-- Format: `throw new Error('Line ' + lineNum + ': ' + message)`
-- Line number (1-indexed)
-- Error type classification
-- Descriptive message
-- No partial results returned
-- Thrown immediately
-<<<END>>>
-
-<<<EXPLANATION>>>
-Add export signature specification
-<<<FILE>>>
-csl-parser/main/core/doc/csl_imp.md
-<<<SEARCH>>>
-# CSL Implementation Q&A
-<<<REPLACE>>>
-## Export Signatures
-
-```javascript
-// parser.js
-export function parse(text) {
-  // Returns AST or throws Error
-}
-
-// validator.js  
-export function validate(ast) {
-  // Returns ValidationError[]
-}
-```
-
-# CSL Implementation Q&A
-<<<END>>>
-
-<<<EXPLANATION>>>
-Update Q&A to reflect new state design
-<<<FILE>>>
-csl-parser/main/core/doc/csl_imp.md
-<<<SEARCH>>>
-## TO Marker State
-**Q**: How track if TO seen to validate REPLACE requirement?
-
-**A**: Add `COLLECTING_SEARCH_TO` state. Transition through states enforces order.
-<<<REPLACE>>>
-## TO Marker State
-**Q**: How track if TO seen to validate REPLACE requirement?
-
-**A**: Use compound states: SEARCH_PATTERN → SEARCH_TO → SEARCH_REPLACEMENT. Transition through states enforces order.
-<<<END>>>
-
-<<<EXPLANATION>>>
-Add clarification about invalid operation transitions
-<<<FILE>>>
-csl-parser/main/core/doc/csl_imp.md
-<<<SEARCH>>>
-## Invalid Attribute Values
-**Q**: Does parser validate that count="all" or count="3"? What about count="invalid"?
-**A**: Parser extracts attribute as-is. Validator checks if count is positive integer or "all".
-<<<REPLACE>>>
-## Invalid Attribute Values
-**Q**: Does parser validate that count="all" or count="3"? What about count="invalid"?
-**A**: Parser extracts attribute as-is. Validator checks if count is positive integer or "all".
-
-## Invalid Operation Transitions
-**Q**: What if `<---WRITE--->` appears while in RUN state?
-**A**: Parser throws error. Must have END marker before starting new operation.
-<<<END>>>
-
-<<<EXPLANATION>>>
-Clarify attribute parsing edge cases
-<<<FILE>>>
-csl-parser/main/core/doc/csl_reqs.md
-<<<SEARCH>>>
-- Values must be quoted
-<<<REPLACE>>>
-- Values must be quoted (unquoted values like `attr=value` are parse errors)
-<<<END>>>
-
-<<<EXPLANATION>>>
-Add note about quoted keys not being valid
-<<<FILE>>>
-csl-parser/main/core/doc/csl_reqs.md
-<<<SEARCH>>>
-- Attribute names can contain any non-whitespace characters
-<<<REPLACE>>>
-- Attribute names can contain any non-whitespace characters (but cannot be quoted)
-<<<END>>>
-
-<<<EXPLANATION>>>
-Document empty TASKS decision in error conditions
-<<<FILE>>>
-csl-parser/main/core/doc/csl_reqs.md
-<<<SEARCH>>>
-### Validation Errors (collected and returned)
-- Missing required attributes
-- Invalid attribute values
-- Empty search patterns
-- Empty RUN content
-- Empty TO patterns
-- Nested TASKS blocks
-<<<REPLACE>>>
-### Validation Errors (collected and returned)
-- Missing required attributes
-- Invalid attribute values
-- Empty search patterns
-- Empty RUN content
-- Empty TO patterns
-- Nested TASKS blocks
-- Note: Empty TASKS (no operations) is valid
+Example error messages:
+- `"Line 5: Unknown operation: INVALID"`
+- `"Line 3: WRITE marker not valid in RUN operation"`
+- `"Line 7: TASKS cannot be nested"`
 <<<END>>>

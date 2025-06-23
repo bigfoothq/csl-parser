@@ -121,11 +121,20 @@ Valid transitions by current state:
 - `SEARCH_REPLACEMENT`: Only END valid
 - `TASKS`: WRITE, RUN, SEARCH, or END valid
 
+When TASKS marker encountered:
+- If `insideTasks` true: throw error (nested TASKS)
+- Otherwise: set state to TASKS, set insideTasks to true
+
 When END marker encountered:
 - If `insideTasks` true and state is not TASKS: set state to TASKS
 - Otherwise: set state to null and insideTasks to false
 
 Invalid transitions throw immediately with line number.
+
+Example error messages:
+- `"Line 5: Unknown operation: INVALID"`
+- `"Line 3: WRITE marker not valid in RUN operation"`
+- `"Line 7: TASKS cannot be nested"`
 
 ## Content Handling
 - Join content lines with LF (\n)
