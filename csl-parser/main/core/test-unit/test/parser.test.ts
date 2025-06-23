@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { parse } from '../../src/parser';
+import { parse } from '../../src/parser.js';
 
 describe('operations', () => {
   describe('write', () => {

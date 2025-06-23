@@ -1,45 +1,56 @@
-=== PROCESSED: 2025-06-23 11:29:54 ===
-SUCCESS Block 1: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/test-unit/cov/parser.cov.md
+=== PROCESSED: 2025-06-23 12:44:05 ===
+SUCCESS Block 1: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/src/parser.ts
 ===
 
-<<<EXPLANATION>>>
+Perfect! Now I can see the issue clearly. The parser is processing all lines, but:
 
-Rewriting the custom delimiters test section with more unique delimiters to make the tests clearer and avoid any confusion with the standard CSL syntax
+1. We're NOT seeing "Content line" logs for lines 2, 4, 6, etc.
+2. We're NOT seeing "Set state to SEARCH_REPLACEMENT" logs
+3. We're NOT seeing "Completed operation" logs
+
+This means the parser is not recognizing `<---REPLACE--->` and `<---TO--->` as markers! They're being treated as content lines, but the content handling isn't logging them either.
+
+The issue is that `<---REPLACE--->` doesn't start with the delimiter check. Let me look at the pattern:
+
+```typescript
+if (line.startsWith(startDelim)) {
+```
+
+This should match `<---REPLACE--->` since it starts with `<---`. So the issue must be in the regex match or the subsequent handling.
+
+Looking at the processing:
+- Line 3: `"<---REPLACE--->"` is processed but no state change is logged
+- Line 5: `"<---END--->"` is processed but no completion is logged
+
+This suggests the parser is entering the `if (line.startsWith(startDelim))` block but then something is failing silently.
+
+Let me add more specific debugging:
+
+<<<EXPLANATION>>>
+Adding debug logging to understand why REPLACE and TO markers aren't being handled correctly.
 
 <<<FILE>>>
-
-csl-parser/main/core/test-unit/cov/parser.cov.md
+csl-parser/main/core/src/parser.ts
 
 <<<SEARCH>>>
-## options.custom_delimiters
-
-### Using custom start/end delimiters
-
-- parse('<<<WRITE file="test.txt">>>
-content
+      const match = line.match(markerRegex);
+      
+      if (!match) {
+        throw new Error(`Line ${lineNum}: Malformed marker`);
+      }
+      
+      const opName = match[1];
+      const attrString = match[3] || '';
 <<<REPLACE>>>
-## options.custom_delimiters
-
-### Using custom start/end delimiters
-
-- parse('@[[[[WRITE file="test.txt"]]]]@
-content
-@[[[[END]]]]@', {startDelimiter: '@[[[[', endDelimiter: ']]]]@'}) 
-→ [{type: 'WRITE', line: 1, file: 'test.txt', content: 'content'}]
-
-- parse('@[[[[TASKS]]]]@
-@[[[[RUN]]]]@
-echo test
-@[[[[END]]]]@
-@[[[[END]]]]@', {startDelimiter: '@[[[[', endDelimiter: ']]]]@'}) 
-→ [{type: 'TASKS', line: 1, operations: [
-    {type: 'RUN', line: 2, content: 'echo test'}
-]}]
-
-- parse('@[[[[SEARCH file="config.json"]]]]@
-"debug": false
-@[[[[REPLACE]]]]@
-"debug": true
-@[[[[END]]]]@', {startDelimiter: '@[[[[', endDelimiter: ']]]]@'}) 
-→ [{type: 'SEARCH', line: 1, file: 'config.json', pattern: '"debug": false', replacement: '"debug": true'}]
+      const match = line.match(markerRegex);
+      
+      if (!match) {
+        throw new Error(`Line ${lineNum}: Malformed marker`);
+      }
+      
+      const opName = match[1];
+      const attrString = match[3] || '';
+      console.log(`Line ${lineNum}: Matched marker opName="${opName}", attrString="${attrString}"`);
 <<<END>>>
+
+This will show us what opName is being extracted from REPLACE and TO markers.
