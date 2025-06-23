@@ -1,44 +1,44 @@
-=== PROCESSED: 2025-06-23 18:57:27 ===
-SUCCESS Block 1: Overwrote /Users/stuart/repos/csl-parser/csl-parser/package.json
+=== PROCESSED: 2025-06-23 19:08:18 ===
+SUCCESS Block 1: Overwrote /Users/stuart/repos/csl-parser/tsconfig.json
 ===
 
-This `ENOENT` error is a classic `npm` issue when using Git dependencies.
+Of course. Moving configuration files can often lead to path-related issues. The error you're seeing with `node:test` and `node:assert` indicates that TypeScript is having trouble locating the type definitions for Node.js's built-in modules. This is a common hiccup when the project root changes, as it can confuse the TypeScript language server.
 
-### Analysis of the Error
-
-1.  **What `npm` is doing:** When you run `npm install`, it sees the `git+https...` dependency for `csl-parser`. It successfully clones the repository into a temporary cache directory (`.../git-cloneQSFBhv`).
-2.  **What `npm` expects:** After cloning, `npm`'s next step is to read the `package.json` file from the *root* of that cloned repository. This file is the package manifest; it tells `npm` the package's name, version, and—most importantly—its main entry point.
-3.  **Why it fails:** The error message `Could not read package.json: Error: ENOENT` means the file does not exist. Your `csl-parser` repository is missing a `package.json` file in its root directory. Without it, `npm` cannot treat the repository as a valid package.
-
-### Solution
-
-The solution is to add a `package.json` file to the root of the `csl-parser` project and commit it. This file will define the necessary metadata for `npm`.
-
-***
+Here is a change to make your TypeScript configuration more explicit, which should resolve the issue.
 
 <<<EXPLANATION>>>
 
-To fix the `npm install` error, you must add a `package.json` file to the root of the `csl-parser` repository. This file defines the project as a valid `npm` package, specifying its name, version, type, and main entry point. The `main` field points to the public API file (`index.js`), which exports the `parse` function.
+By moving `package.json` and `tsconfig.json`, you've effectively changed your project's root directory. The TypeScript error `Cannot find module 'node:test'` suggests that the type definitions for Node.js are not being resolved correctly in this new structure.
+
+To fix this, we'll explicitly tell the TypeScript compiler to include the Node.js types by adding the `types` option to your `tsconfig.json`. This makes the configuration more robust and helps ensure the tooling can correctly locate all necessary type definitions, regardless of any potential confusion about the project root.
 
 <<<FILE>>>
 
-csl-parser/package.json
+tsconfig.json
 
 <<<OVERWRITE>>>
 {
-  "name": "csl-parser",
-  "version": "1.0.0",
-  "description": "A single-pass state machine parser for CSL (Clada Syntax Language).",
-  "main": "main/core/src/index.js",
-  "type": "module",
-  "author": "",
-  "license": "ISC"
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "sourceMap": true,
+    "inlineSources": true,
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "main/**/*.ts",
+    "shared/**/*.ts"
+  ]
 }
 <<<END>>>
-
-### Next Steps
-
-1.  Add the `package.json` file with the content above to the root of your `csl-parser` Git repository.
-2.  Commit and push this change to the branch you are tracking in `clada`.
-3.  Update the commit hash in `clada/package.json` to this new commit.
-4.  Run `npm install` again in the `clada` directory. It should now succeed.

@@ -2,7 +2,7 @@
   "name": "csl-parser",
   "version": "1.0.0",
   "type": "module",
-  "main": "main/core/src/index.js",
+  "main": "csl-parser/main/core/src/index.js",
   "engines": {
     "node": ">=20.0.0"
   },
