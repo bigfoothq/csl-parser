@@ -40,31 +40,49 @@ export function parse(text: string, options?: ParseOptions): Operation[] {
     console.log(`Line ${lineNum}: "${line}"`);
     console.log(`  State: ${state}, insideTasks: ${insideTasks}, currentOp: ${currentOp ? currentOp.type : 'null'}`);
     
-    // Check if line starts with delimiter
+    // Check if this could be a marker
+    let isMarker = false;
+    let markerMatch: RegExpMatchArray | null = null;
+    
     if (line.startsWith(startDelim)) {
-      const match = line.match(markerRegex);
+      markerMatch = line.match(markerRegex);
       
-      if (!match) {
-        // A line starting with the delimiter that doesn't match the regex is either
-        // content (if inside an op and not otherwise an error) or an error.
+      if (markerMatch) {
+        const opName = markerMatch[1];
         
-        // This is always an error: extra content on the same line as a marker-like sequence.
-        const trimmed = line.trim();
-        if (trimmed.includes(endDelim) && !trimmed.endsWith(endDelim)) {
-          throw new Error(`Line ${lineNum}: Content not allowed on marker line`);
+        // Determine if this is a valid state-transition marker for current state
+        if (!state || state === 'TASKS') {
+          // Not in content block - all valid markers accepted
+          isMarker = true;
+        } else if (state === 'WRITE' || state === 'RUN') {
+          // Only END is valid
+          isMarker = opName === 'END';
+        } else if (state === 'SEARCH_PATTERN') {
+          // TO, REPLACE, END are valid
+          isMarker = ['TO', 'REPLACE', 'END'].includes(opName);
+        } else if (state === 'SEARCH_TO') {
+          // Only REPLACE is valid
+          isMarker = opName === 'REPLACE';
+        } else if (state === 'SEARCH_REPLACEMENT') {
+          // Only END is valid
+          isMarker = opName === 'END';
         }
-
-        if (state) { // Inside an operation, other malformations are treated as content.
-          if (state === 'SEARCH_PATTERN') { searchPattern.push(line); }
-          else if (state === 'SEARCH_TO') { searchTo.push(line); }
-          else if (state === 'SEARCH_REPLACEMENT') { searchReplacement.push(line); }
-          else { contentBuffer.push(line); }
-          lineNum++;
-          continue;
-        } else { // Outside an operation, any malformed marker is a syntax error.
+      } else {
+        // Line starts with delimiter but doesn't match pattern
+        console.log(`  Marker regex failed to match`);
+        console.log(`  Current state: ${state}`);
+        if (!state || state === 'TASKS') {
+          // At top level - this is an error
+          console.log(`  Throwing malformed marker error`);
           throw new Error(`Line ${lineNum}: Malformed marker`);
         }
+        // In content block - treat as literal content
+        console.log(`  In content block - treating as literal content`);
       }
+    }
+    
+    if (isMarker && markerMatch) {
+      const match = markerMatch;
       
       const opName = match[1];
       const attrString = match[3] || '';
@@ -181,9 +199,8 @@ export function parse(text: string, options?: ParseOptions): Operation[] {
       else {
         throw new Error(`Line ${lineNum}: Unknown operation: ${opName}`);
       }
-    }
-    else {
-      // Content line - special handling for state-transition markers in content
+    } else {
+      // Not a marker - treat as content if in content state
       if (state && currentOp && state !== 'TASKS') {
         if (state === 'SEARCH_PATTERN') {
           searchPattern.push(line);
@@ -194,6 +211,9 @@ export function parse(text: string, options?: ParseOptions): Operation[] {
         } else {
           contentBuffer.push(line);
         }
+      } else if ((!state || state === 'TASKS') && line.startsWith(startDelim)) {
+        // At top level or in TASKS, and line starts with delimiter but wasn't recognized as valid marker
+        throw new Error(`Line ${lineNum}: Malformed marker`);
       }
     }
     

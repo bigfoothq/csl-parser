@@ -169,9 +169,9 @@ Invalid transitions throw immediately with line number (e.g., `"Line 5: Unknown 
 # CSL Implementation Q&A
 
 ## Marker Regex Pattern
-**Q**: Pattern `/^<---(\w+)(\s+(.*))?--->$/` allows spaces before operation. Contradicts spec.
+**Q**: Pattern `/^<---(\w+)(\s+(.*))?--->$/` allows spaces before operation. does that Contradict spec?
 
-**A**: Correct. Pattern assumes no spaces. If spaces present, `\w+` won't match, parse fails.
+**A**: its fine if theres a space between the marker and the operation name
 
 
 ## Line Number Tracking

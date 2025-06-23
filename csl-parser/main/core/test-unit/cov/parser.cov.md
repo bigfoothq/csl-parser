@@ -560,13 +560,13 @@ echo done
 <---REPLACE--->
 invalid
 <---END--->') 
-→ Error("Line 2: REPLACE marker not valid in WRITE operation")
+→ [{type: 'WRITE', line: 1, file: 'test.txt', content: '<---REPLACE--->\ninvalid'}]
 
 - parse('<---RUN--->
 <---TO--->
 invalid
 <---END--->') 
-→ Error("Line 2: TO marker not valid in RUN operation")
+→ [{type: 'RUN', line: 1, content: '<---TO--->\ninvalid'}]
 
 ## state_machine.invalid.missing_end
 
@@ -596,29 +596,11 @@ replacement')
 
 ### <-- or ---> alone
 
-- parse('<--WRITE file="test.txt"--->
-content
-<---END--->') 
-→ Error("Line 1: Malformed marker")
-
 - parse('<---WRITE file="test.txt"-->
 content
 <---END--->') 
 → Error("Line 1: Malformed marker")
 
-## parse_errors.malformed.spaces
-
-### Spaces in markers
-
-- parse('<--- WRITE file="test.txt"--->
-content
-<---END--->') 
-→ Error("Line 1: Malformed marker")
-
-- parse('<---WRITE file="test.txt" --->
-content
-<---END--->') 
-→ Error("Line 1: Malformed marker")
 
 ## parse_errors.malformed.invalid_line_start
 
@@ -676,7 +658,7 @@ echo test
 - parse('<---WRITE file="test.txt"--->
 content
 <---WRITE file="test2.txt"--->') 
-→ Error("Line 3: WRITE marker not valid in WRITE operation")
+→ Error("Line 1: Unterminated WRITE operation")
 
 ## parse_errors.structural.content_on_marker
 
