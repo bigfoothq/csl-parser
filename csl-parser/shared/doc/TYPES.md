@@ -56,3 +56,12 @@ type AST = Operation[];
 - Additional attributes from CSL are preserved as top-level properties
 - All string values preserved exactly as parsed (no type coercion)
 - Line numbers are 1-indexed
+
+## Parser Output vs Valid Operations
+
+Parser produces syntactically valid AST that may violate semantic rules:
+- Missing required fields allowed
+- Invalid attribute values allowed (e.g., count="invalid")
+- Empty content where prohibited allowed
+
+Validator ensures semantic validity per operation constraints.

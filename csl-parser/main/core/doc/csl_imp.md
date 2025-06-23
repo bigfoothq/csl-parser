@@ -40,39 +40,44 @@
 
 ### Error Detection Points
 
-**Lexical Errors** (detected during marker parsing):
-- Malformed markers: missing delimiters, spaces in operation names
-- Unterminated quoted attributes
-- Invalid escape sequences
-- Unknown operation names
+**Parse Phase Errors** (parser throws immediately):
+- **Lexical Errors**:
+  - Malformed markers: missing delimiters, incomplete markers
+  - Unterminated quoted attributes
+  - Unknown operation names (not WRITE, RUN, SEARCH, TASKS)
+- **Syntactic Errors**:
+  - Invalid marker for current state
+  - Nested TASKS blocks
+  - Missing END markers
 
-**Syntactic Errors** (detected during state transitions):
-- Invalid marker for current state
-- Nested TASKS blocks
-- Missing END markers
-- Unexpected content outside operations
-
-**Semantic Errors** (detected post-parse):
-- Missing required attributes
-- Invalid attribute values
-- Empty content violations:
-  - SEARCH pattern cannot be empty
-  - TO pattern cannot be empty
-  - RUN content cannot be empty
+**Validation Phase Errors** (validator reports after parsing):
+- **Semantic Errors**:
+  - Missing required attributes
+  - Invalid attribute values
+  - Empty content violations:
+    - SEARCH pattern cannot be empty
+    - TO pattern cannot be empty
+    - RUN content cannot be empty
 
 ## Error Handling Strategy
 
 ### Error Information
-All errors include:
+Parser errors:
 - Line number (1-indexed)
 - Error type classification
 - Descriptive message
 - No partial results returned
+- Thrown immediately
 
-### Fail-Fast Approach
-- First error halts parsing immediately
-- No error recovery attempted
-- Clean state ensures predictable behavior
+Validator errors:
+- Returned as array
+- Each error includes line, operation, message
+- All errors collected in single pass
+
+### Fail-Fast vs Collect-All
+- Parser: First error halts parsing immediately
+- Validator: Collects all errors before returning
+- Different strategies for different phases
 
 ## Implementation Flow
 
@@ -96,6 +101,7 @@ All errors include:
 7. Throw if duplicate found
 8. Add key-value to map
 9. Return map or throw on syntax error
+10. No validation of attribute values (e.g., count="invalid" accepted)
 
 ### State Transition Validation
 - Maintain transition table for valid state changes
@@ -112,17 +118,38 @@ All errors include:
 ## AST Construction
 - Build operation objects incrementally
 - Attach line numbers for error context
-- Validate required fields before returning
 - Type remains as string (no coercion)
 - Flatten all attributes to top level of operation object
 - Preserve unknown attributes as-is
 - Return array of operation objects per TYPES.md schema
+- No validation of required fields (validator responsibility)
 
 ## Post-Parse Validation
-- Separate pass over AST
-- Check required attributes per operation type
-- Validate attribute value constraints
-- Report first violation found
+
+### Validator Contract
+- Input: AST from parser (may contain invalid operations)
+- Output: Array of validation errors or empty array if valid
+- No AST transformation - validator is read-only
+- Collects ALL errors in single pass (not fail-fast)
+
+### Validation Process
+1. Iterate through all operations in AST
+2. For each operation:
+   - Check required attributes exist
+   - Validate attribute value formats
+   - Check content constraints
+3. Collect errors with operation context and line numbers
+4. Return all errors found
+
+### Error Object Structure
+```javascript
+{
+  line: number,        // Line number from AST
+  operation: string,   // Operation type
+  error: string,       // Error message
+  field?: string       // Optional field name
+}
+```
 
 # CSL Implementation Q&A
 
@@ -166,3 +193,11 @@ ANSWER: Yes. Remove "invalid escape sequences" from lexical errors. Implementati
 **Question**: Should parser preserve exact whitespace between attributes or normalize to single spaces?
 
 ANSWER - normalize to single space or do whatever so that  it's ok to have multiple spaces bewteen attributes
+
+## Missing Required Attributes
+**Q**: When are missing required attributes detected?
+**A**: During validation phase, not parsing. Parser produces AST with whatever attributes present.
+
+## Invalid Attribute Values
+**Q**: Does parser validate that count="all" or count="3"? What about count="invalid"?
+**A**: Parser extracts attribute as-is. Validator checks if count is positive integer or "all".

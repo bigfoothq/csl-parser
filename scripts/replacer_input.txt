@@ -1,158 +1,51 @@
-=== PROCESSED: 2025-06-23 00:04:25 ===
-SUCCESS Block 1: Created /Users/stuart/repos/csl-parser/csl-parser/shared/doc/TYPES.md
-ERROR Block 2: No match found in /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_reqs.md
-SUCCESS Block 3: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_reqs.md
-ERROR Block 4: No match found in /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
+=== PROCESSED: 2025-06-23 00:37:42 ===
+SUCCESS Block 1: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/STORY.md
+SUCCESS Block 2: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/STORY.md
+SUCCESS Block 3: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
+SUCCESS Block 4: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_reqs.md
 SUCCESS Block 5: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
+SUCCESS Block 6: Updated /Users/stuart/repos/csl-parser/csl-parser/shared/doc/ABSTRACT.md
+SUCCESS Block 7: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
+SUCCESS Block 8: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/ABSTRACT.md
+SUCCESS Block 9: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
+SUCCESS Block 10: Created /Users/stuart/repos/csl-parser/csl-parser/main/core/test-unit/cov/validator.cov.md
+SUCCESS Block 11: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_reqs.md
 ===
 
-<<<EXPLANATION>>>
-Define AST structure explicitly in TYPES.md as decided
-
-<<<FILE>>>
-csl-parser/shared/doc/TYPES.md
-
-<<<OVERWRITE>>>
-20250123
-
-# CSL Parser Types
-
-## AST Structure
-
-```typescript
-type Operation = {
-  type: 'WRITE' | 'RUN' | 'SEARCH' | 'TASKS';
-  line: number;
-  
-  // Attributes - all optional, flattened to top level
-  file?: string;
-  append?: string;
-  dir?: string;
-  count?: string;
-  version?: string;
-  
-  // Content fields - presence depends on operation type
-  content?: string;      // WRITE, RUN
-  pattern?: string;      // SEARCH
-  to?: string;           // SEARCH (optional)
-  replacement?: string;  // SEARCH
-  
-  // TASKS only
-  operations?: Operation[];
-  
-  // Extension point - any additional attributes
-  [key: string]: any;
-}
-
-type AST = Operation[];
-```
-
-## Field Constraints by Operation Type
-
-### WRITE
-- Required: `type`, `line`, `file`, `content`
-- Optional: `append`
-
-### RUN  
-- Required: `type`, `line`, `content`
-- Optional: `dir`
-
-### SEARCH
-- Required: `type`, `line`, `file`, `pattern`, `replacement`
-- Optional: `count`, `to`
-
-### TASKS
-- Required: `type`, `line`, `operations`
-- Optional: `version`
-
-## Notes
-
-- Parser outputs may include invalid states (missing required fields) to enable better error messages
-- Additional attributes from CSL are preserved as top-level properties
-- All string values preserved exactly as parsed (no type coercion)
-- Line numbers are 1-indexed
-<<<END>>>
+## Documentation Updates for Parser/Validator Split
 
 <<<EXPLANATION>>>
-Remove line ending preservation requirements from spec
-
+Update the third user story to reflect validator responsibility for semantic errors, not parser.
 <<<FILE>>>
-csl-parser/main/core/doc/csl_reqs.md
-
+csl-parser/main/core/doc/STORY.md
 <<<SEARCH>>>
-### Line Ending Preservation
-- Content starts on the line after an operation marker
-- Content ends on the line before the END marker
-- Each line of content preserves its text exactly, without line endings
-- Line endings are reconstructed based on which lines had endings in the original
-- Parser must track line ending types (\n, \r\n, \r) to reconstruct exactly
-- Mixed line endings within content must be preserved byte-for-byte
-- Inline END markers are invalid - END must start at beginning of line
+## Validate Required Attributes
+User provides operation missing required attributes. Parser throws error indicating which attribute is missing on which line.
 <<<REPLACE>>>
-### Content Handling
-- Content starts on the line after an operation marker
-- Content ends on the line before the END marker
-- All line endings normalized to LF (\n) during parsing
-- Platform-specific line endings handled at execution time
+## Validate Required Attributes
+User provides operation missing required attributes. Parser returns AST, validator reports error indicating which attribute is missing on which line.
 <<<END>>>
 
 <<<EXPLANATION>>>
-Add execution layer note to clarify parser boundaries
-
+Add new user story for syntax errors vs semantic errors distinction.
 <<<FILE>>>
-csl-parser/main/core/doc/csl_reqs.md
-
+csl-parser/main/core/doc/STORY.md
 <<<SEARCH>>>
-## Edge Cases
-- All markers (`<---OPERATION...>`, `<---TO--->`, `<---REPLACE--->`, `<---END--->`) must be complete lines with no other content
+## Process Nested TASKS
+User provides TASKS block containing multiple operations. Parser returns TASKS object with operations array, maintaining proper line numbers for nested operations.
 <<<REPLACE>>>
-## Execution Considerations (Not Parser Responsibility)
-- Platform-specific line endings applied during file operations
-- SEARCH operations normalize both file and pattern for matching
-- Binary file detection prevents unwanted normalization
+## Process Nested TASKS
+User provides TASKS block containing multiple operations. Parser returns TASKS object with operations array, maintaining proper line numbers for nested operations.
 
-## Edge Cases
-- All markers (`<---OPERATION...>`, `<---TO--->`, `<---REPLACE--->`, `<---END--->`) must be complete lines with no other content
+## Parse File With Semantic Errors
+User provides CSL with missing required attributes but valid syntax. Parser returns complete AST. Validator reports all semantic errors with line numbers.
 <<<END>>>
 
 <<<EXPLANATION>>>
-Update implementation guide to remove line ending tracking
-
+Remove AST validation from parser responsibilities in implementation guide.
 <<<FILE>>>
 csl-parser/main/core/doc/csl_imp.md
-
 <<<SEARCH>>>
-## Content Preservation
-- Maintain exact byte sequences
-- No line ending normalization
-- No whitespace trimming
-- Content blocks include all lines between markers
-- Line endings are not stored with content lines
-- Parser must track which lines had endings and their type
-- Reconstruction joins lines with appropriate endings
-- Final line ending presence determined by blank line before END marker
-<<<REPLACE>>>
-## Content Handling
-- Join content lines with LF (\n)
-- No whitespace trimming
-- Empty content = zero bytes between markers
-- Trailing newline included if blank line before END marker
-<<<END>>>
-
-<<<EXPLANATION>>>
-Add AST construction details with new structure
-
-<<<FILE>>>
-csl-parser/main/core/doc/csl_imp.md
-
-<<<SEARCH>>>
-## AST Construction
-- Build operation objects incrementally
-- Attach line numbers for error context
-- Validate required fields before returning
-- Type remains as string (no coercion)
-- Return array of operation objects
-<<<REPLACE>>>
 ## AST Construction
 - Build operation objects incrementally
 - Attach line numbers for error context
@@ -161,18 +54,269 @@ csl-parser/main/core/doc/csl_imp.md
 - Flatten all attributes to top level of operation object
 - Preserve unknown attributes as-is
 - Return array of operation objects per TYPES.md schema
+<<<REPLACE>>>
+## AST Construction
+- Build operation objects incrementally
+- Attach line numbers for error context
+- Type remains as string (no coercion)
+- Flatten all attributes to top level of operation object
+- Preserve unknown attributes as-is
+- Return array of operation objects per TYPES.md schema
+- No validation of required fields (validator responsibility)
 <<<END>>>
 
 <<<EXPLANATION>>>
-Remove obsolete Q&A about escape sequences
-
+Clarify END marker validation in Q&A section.
 <<<FILE>>>
 csl-parser/main/core/doc/csl_reqs.md
-
 <<<SEARCH>>>
-## Escape Sequences
-**Q**: What happens with `\n`, `\t`, or `\x` where x is not `"`, `'`, or `\`?
-
-**A**: Literal text. `\n` = `\n` (two characters), not newline.
+**Answer**: END markers cannot have attributes. `<---END--->` is the only valid form.
 <<<REPLACE>>>
+**Answer**: END markers cannot have attributes. `<---END--->` is the only valid form. Parser throws on `<---END attr="value"--->`.
+<<<END>>>
+
+<<<EXPLANATION>>>
+Add clarification about parser not validating attribute values in implementation guide.
+<<<FILE>>>
+csl-parser/main/core/doc/csl_imp.md
+<<<SEARCH>>>
+### Attribute Parsing Algorithm
+1. Parse character-by-character with quote state tracking
+2. For each token: extract key=value pattern
+3. Handle quoted values with escape processing
+4. Escape sequences processed left-to-right, single pass
+5. Any non-whitespace allowed in attribute names
+6. Check if key exists in map before insertion
+7. Throw if duplicate found
+8. Add key-value to map
+9. Return map or throw on syntax error
+<<<REPLACE>>>
+### Attribute Parsing Algorithm
+1. Parse character-by-character with quote state tracking
+2. For each token: extract key=value pattern
+3. Handle quoted values with escape processing
+4. Escape sequences processed left-to-right, single pass
+5. Any non-whitespace allowed in attribute names
+6. Check if key exists in map before insertion
+7. Throw if duplicate found
+8. Add key-value to map
+9. Return map or throw on syntax error
+10. No validation of attribute values (e.g., count="invalid" accepted)
+<<<END>>>
+
+<<<EXPLANATION>>>
+Add integration pattern to shared ABSTRACT to document how parser and validator work together.
+<<<FILE>>>
+csl-parser/shared/doc/ABSTRACT.md
+<<<SEARCH>>>
+Overview: Provides marker delimiters, operation names, and other constants used throughout the parser. No parsing logic, just shared definitions.
+<<<REPLACE>>>
+Overview: Provides marker delimiters, operation names, and other constants used throughout the parser. No parsing logic, just shared definitions.
+
+## Usage Pattern
+
+```javascript
+import { parse } from '../main/core/src/parser.js';
+import { validate } from '../main/core/src/validator.js';
+
+const ast = parse(cslText);  // Throws on syntax errors
+const errors = validate(ast); // Returns array of semantic errors
+if (errors.length > 0) {
+  // Handle validation errors
+}
+```
+<<<END>>>
+
+<<<EXPLANATION>>>
+Add note about error handling differences between parser and validator.
+<<<FILE>>>
+csl-parser/main/core/doc/csl_imp.md
+<<<SEARCH>>>
+### Error Information
+All errors include:
+- Line number (1-indexed)
+- Error type classification
+- Descriptive message
+- No partial results returned
+
+### Fail-Fast Approach
+- First error halts parsing immediately
+- No error recovery attempted
+- Clean state ensures predictable behavior
+<<<REPLACE>>>
+### Error Information
+Parser errors:
+- Line number (1-indexed)
+- Error type classification
+- Descriptive message
+- No partial results returned
+- Thrown immediately
+
+Validator errors:
+- Returned as array
+- Each error includes line, operation, message
+- All errors collected in single pass
+
+### Fail-Fast vs Collect-All
+- Parser: First error halts parsing immediately
+- Validator: Collects all errors before returning
+- Different strategies for different phases
+<<<END>>>
+
+<<<EXPLANATION>>>
+Update parser ABSTRACT to clarify it doesn't validate semantics.
+<<<FILE>>>
+csl-parser/main/core/doc/ABSTRACT.md
+<<<SEARCH>>>
+Overview: Single-pass state machine parser that converts CSL markup into operation objects. Validates syntax, enforces structural rules, and provides detailed error messages with line numbers. Handles WRITE, RUN, SEARCH, and TASKS operations.
+<<<REPLACE>>>
+Overview: Single-pass state machine parser that converts CSL markup into operation objects. Validates syntax and structure only, not semantic rules. Provides detailed error messages with line numbers. Handles WRITE, RUN, SEARCH, and TASKS operations.
+<<<END>>>
+
+<<<EXPLANATION>>>
+Add explicit note about unknown operations being syntax errors.
+<<<FILE>>>
+csl-parser/main/core/doc/csl_imp.md
+<<<SEARCH>>>
+**Parse Phase Errors** (parser throws immediately):
+- **Lexical Errors**:
+  - Malformed markers: missing delimiters, incomplete markers
+  - Unterminated quoted attributes
+  - Unknown operation names
+<<<REPLACE>>>
+**Parse Phase Errors** (parser throws immediately):
+- **Lexical Errors**:
+  - Malformed markers: missing delimiters, incomplete markers
+  - Unterminated quoted attributes
+  - Unknown operation names (not WRITE, RUN, SEARCH, TASKS)
+<<<END>>>
+
+<<<EXPLANATION>>>
+Create validator covenant file to specify behavior.
+<<<FILE>>>
+csl-parser/main/core/test-unit/cov/validator.cov.md
+<<<OVERWRITE>>>
+20250123
+
+# validator.cov.md
+
+validate(ast) → ValidationError[]
+
+## Valid Operations
+
+validate([{type: 'WRITE', file: 'test.txt', content: 'hello', line: 1}]) 
+→ []
+
+validate([{type: 'RUN', content: 'echo test', line: 1}]) 
+→ []
+
+validate([{type: 'SEARCH', file: 'test.js', pattern: 'old', replacement: 'new', line: 1}]) 
+→ []
+
+validate([{type: 'TASKS', operations: [], line: 1}]) 
+→ []
+
+## Missing Required Attributes
+
+validate([{type: 'WRITE', content: 'hello', line: 1}]) 
+→ [{line: 1, operation: 'WRITE', error: "Missing required attribute 'file'"}]
+
+validate([{type: 'SEARCH', pattern: 'old', replacement: 'new', line: 1}]) 
+→ [{line: 1, operation: 'SEARCH', error: "Missing required attribute 'file'"}]
+
+## Invalid Attribute Values
+
+validate([{type: 'WRITE', file: 'test.txt', append: 'yes', content: 'hello', line: 1}]) 
+→ [{line: 1, operation: 'WRITE', error: "Invalid value for 'append': must be 'true' or 'false'", field: 'append'}]
+
+validate([{type: 'SEARCH', file: 'test.js', count: 'invalid', pattern: 'old', replacement: 'new', line: 1}]) 
+→ [{line: 1, operation: 'SEARCH', error: "Invalid value for 'count': must be positive integer or 'all'", field: 'count'}]
+
+## Empty Content Violations
+
+validate([{type: 'RUN', content: '', line: 1}]) 
+→ [{line: 1, operation: 'RUN', error: "Empty content not allowed for RUN operation"}]
+
+validate([{type: 'SEARCH', file: 'test.js', pattern: '', replacement: 'new', line: 1}]) 
+→ [{line: 1, operation: 'SEARCH', error: "Empty search pattern not allowed"}]
+
+validate([{type: 'SEARCH', file: 'test.js', pattern: 'old', to: '', replacement: 'new', line: 1}]) 
+→ [{line: 1, operation: 'SEARCH', error: "Empty TO pattern not allowed"}]
+
+## Multiple Errors
+
+validate([
+  {type: 'WRITE', content: 'hello', line: 1},
+  {type: 'RUN', content: '', line: 4},
+  {type: 'SEARCH', pattern: 'old', replacement: 'new', line: 7}
+]) 
+→ [
+  {line: 1, operation: 'WRITE', error: "Missing required attribute 'file'"},
+  {line: 4, operation: 'RUN', error: "Empty content not allowed for RUN operation"},
+  {line: 7, operation: 'SEARCH', error: "Missing required attribute 'file'"}
+]
+
+## Nested TASKS Validation
+
+validate([{
+  type: 'TASKS', 
+  operations: [
+    {type: 'WRITE', file: 'test.txt', content: 'hello', line: 2},
+    {type: 'TASKS', operations: [], line: 3}
+  ], 
+  line: 1
+}]) 
+→ [{line: 3, operation: 'TASKS', error: "TASKS cannot contain other TASKS operations"}]
+
+## Valid Edge Cases
+
+validate([{type: 'WRITE', file: '', content: 'hello', line: 1}]) 
+→ []
+
+validate([{type: 'SEARCH', file: 'test.js', pattern: 'old', replacement: '', line: 1}]) 
+→ []
+
+validate([{type: 'RUN', dir: '/path/to/dir', content: 'ls', line: 1}]) 
+→ []
+<<<END>>>
+
+<<<EXPLANATION>>>
+Update the error conditions section to clarify parser vs validator responsibilities.
+<<<FILE>>>
+csl-parser/main/core/doc/csl_reqs.md
+<<<SEARCH>>>
+## Error Conditions
+- Unclosed operations (missing END)
+- Invalid operation names
+- Malformed markers (missing delimiters, spaces in markers, incomplete markers)
+- Invalid marker for current context (e.g., TO outside SEARCH)
+- Missing required attributes
+- Duplicate attributes
+- Invalid attribute values
+- Empty search patterns
+- Empty RUN content
+- Nested TASKS blocks
+- Line numbers in errors are 1-indexed
+<<<REPLACE>>>
+## Error Conditions
+
+### Parse Errors (thrown immediately)
+- Unclosed operations (missing END)
+- Invalid operation names
+- Malformed markers (missing delimiters, spaces in markers, incomplete markers)
+- Invalid marker for current context (e.g., TO outside SEARCH)
+- Duplicate attributes
+
+### Validation Errors (collected and returned)
+- Missing required attributes
+- Invalid attribute values
+- Empty search patterns
+- Empty RUN content
+- Empty TO patterns
+- Nested TASKS blocks
+
+### Error Reporting
+- Line numbers in all errors are 1-indexed
+- Parser throws on first error
+- Validator returns all errors found
 <<<END>>>

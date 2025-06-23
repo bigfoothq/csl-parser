@@ -109,7 +109,22 @@ operations...
 - Preserved exactly (including whitespace and line endings)
 - May contain CSL syntax as literal text
 
-## Validation Rules
+## Syntax Rules (Parser Enforced)
+
+### Structural Rules
+- Every operation must end with `<---END--->`
+- TASKS cannot be nested (maximum depth: 1)
+- No content allowed on same line as markers
+- Lines starting with `<---` must form valid markers or cause parse error
+- All markers must appear on their own lines
+- Duplicate attributes not allowed in same operation
+
+### Marker Formation
+- Valid operation names: WRITE, RUN, SEARCH, TASKS
+- Valid state transition markers per context
+- Proper delimiter syntax
+
+## Semantic Rules (Validator Enforced)
 
 ### Required Attributes
 - WRITE: `file` (required), `append` (optional)
@@ -122,26 +137,13 @@ operations...
 - `append`: "true" or "false"
 - `file`, `dir`, `version`: any string
 
-### Structural Rules
-- Every operation must end with `<---END--->`
-- TASKS cannot be nested (maximum depth: 1)
-- TASKS can contain any operation except other TASKS
-- Duplicate attributes not allowed
-- No content allowed on same line as markers
-- Lines starting with `<---` must form valid markers or cause parse error (when not in content collection)
-- All markers must appear on their own lines with no content before or after
-- Markers cannot share lines with content or other markers
-- Text outside operations is allowed and ignored by the parser
-
 ### Content Rules
-- Empty content = zero bytes between markers (no characters, not even whitespace)
+- Empty content = zero bytes between markers
 - Empty WRITE content: valid
 - Empty RUN content: invalid
 - Empty SEARCH pattern: invalid
 - Empty TO pattern: invalid
 - Empty REPLACE content: valid (deletion)
-- One command per RUN block (spanning multiple lines allowed)
-- Shell handles line continuations
 
 ### Content Handling
 - Content starts on the line after an operation marker
@@ -158,17 +160,26 @@ operations...
 - Count must be positive integer or "all"
 
 ## Error Conditions
+
+### Parse Errors (thrown immediately)
 - Unclosed operations (missing END)
 - Invalid operation names
 - Malformed markers (missing delimiters, spaces in markers, incomplete markers)
 - Invalid marker for current context (e.g., TO outside SEARCH)
-- Missing required attributes
 - Duplicate attributes
+
+### Validation Errors (collected and returned)
+- Missing required attributes
 - Invalid attribute values
 - Empty search patterns
 - Empty RUN content
+- Empty TO patterns
 - Nested TASKS blocks
-- Line numbers in errors are 1-indexed
+
+### Error Reporting
+- Line numbers in all errors are 1-indexed
+- Parser throws on first error
+- Validator returns all errors found
 
 ## Execution Considerations (Not Parser Responsibility)
 - Platform-specific line endings applied during file operations
@@ -238,7 +249,14 @@ Any other marker (like `<---WRITE file="test"--->`) is literal text.
 **Why it matters**: The implementation regex pattern accepts attributes on ALL markers including END, but zero examples show END with attributes. Developers need explicit guidance.  
 **Question**: Should END markers accept attributes or not?
 
-**Answer**: END markers cannot have attributes. `<---END--->` is the only valid form.
+**Answer**: END markers cannot have attributes. `<---END--->` is the only valid form. Parser throws on `<---END attr="value"--->`.
+
+## 2. Parser vs Validator Responsibility
+**Concern**: Requirements mix syntax and semantic rules without clear ownership.
+**Why it matters**: Parser and validator need clear boundaries for implementation.
+**Question**: Which component enforces which rules?
+
+**Answer**: Parser enforces syntax (marker formation, state transitions). Validator enforces semantics (required attributes, value constraints).
 
 ## Execution Considerations (Not Parser Responsibility)
 - Platform-specific line endings applied during file operations
