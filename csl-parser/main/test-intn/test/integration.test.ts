@@ -2,6 +2,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { parse } from '../../core/src/index.js';
 
+//TODO this should support configurable markers.  and need to trash the html escapes
+
 describe('CSL Parser Integration Tests', () => {
   describe('Successful Parse and Validation', () => {
     it('parse(validCsl) → {ast: [...], validationErrors: []}', () => {
