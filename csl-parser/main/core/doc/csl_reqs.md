@@ -1,15 +1,16 @@
-20250122
+20250123
 
 # CSL (Clada Syntax Language) Specification
 
 ## Syntax
 
 ### Markers
-- Start delimiter: `<---` (configurable)
-- End delimiter: `--->` (configurable)
+- Start delimiter: `<---` (default, configurable via parser options)
+- End delimiter: `--->` (default, configurable via parser options)
 - Format: `<---OPERATION attributes--->`
 - Must start at beginning of line
-- Case-sensitive
+- Operation names are case-sensitive (WRITE, RUN, SEARCH, TASKS must be uppercase)
+- Attribute names are case-sensitive
 - No spaces allowed within operation name or delimiters
 
 ### Operations
@@ -92,12 +93,14 @@ operations...
 
 ### Attributes
 - Format: `key="value"` or `key='value'`
-- Attribute names can contain any non-whitespace characters (but cannot be quoted)
-- Whitespace required between attributes
+- Attribute names follow XML naming rules: can contain letters, digits, hyphens, underscores, colons, and periods. Cannot contain spaces, quotes, equals, or angle brackets
+- At least one whitespace character required between operation name and first attribute
+- Whitespace required between attributes (multiple spaces normalized to single)
 - Whitespace allowed around `=` (e.g., `attr = "value"` valid)
 - Values must be quoted (unquoted values like `attr=value` are parse errors)
 - Empty values allowed: `attr=""`
 - Attributes must be on same line as operation marker
+- END markers cannot have attributes (`<---END--->` is the only valid form)
 - Escape sequences within values:
   - `\"` → `"` (inside double quotes)
   - `\'` → `'` (inside single quotes)  
@@ -148,8 +151,10 @@ operations...
 ### Content Handling
 - Content starts on the line after an operation marker
 - Content ends on the line before the END marker
-- All line endings normalized to LF (\n) during parsing
-- Platform-specific line endings handled at execution time
+- All line endings normalized to LF (\n) during parsing (following Git's approach)
+- Mixed line endings within a file are normalized consistently
+- Platform-specific line endings applied only during file write operations (execution phase)
+- Parser handles CRLF, LF, and CR inputs, all normalized to LF
 
 ### Search Operation Rules
 - TO marker only valid in SEARCH operations
@@ -158,6 +163,40 @@ operations...
 - REPLACE marker required in all SEARCH operations
 - Replacement count defaults to 1 if not specified
 - Count must be positive integer or "all"
+
+### State Transitions
+
+Valid state transitions enforced by parser:
+
+| Current State | Valid Next Markers | Notes |
+|--------------|-------------------|-------|
+| (none) | WRITE, RUN, SEARCH, TASKS | Initial state |
+| WRITE | END | No other operations allowed |
+| RUN | END | No other operations allowed |
+| SEARCH (pattern) | TO, REPLACE | After initial SEARCH marker |
+| SEARCH (to) | REPLACE | After TO marker |
+| SEARCH (replace) | END | After REPLACE marker |
+| TASKS | WRITE, RUN, SEARCH, END | Can contain multiple operations |
+
+Inside TASKS:
+- When operation completes (END), state returns to TASKS
+- TASKS cannot be nested (parser throws error)
+- When TASKS ends, state returns to (none)
+
+## Component Responsibilities
+
+### Parser Enforces
+- Marker formation and syntax
+- State transitions (valid operations in current context)
+- Structural rules (proper nesting, END markers)
+- Attribute syntax (quotes, duplicates)
+- Lines starting with `<---` must form valid markers
+
+### Validator Enforces
+- Required attributes presence
+- Attribute value constraints (e.g., count must be positive integer or "all")
+- Content rules (empty content restrictions)
+- Semantic correctness
 
 ## Error Conditions
 

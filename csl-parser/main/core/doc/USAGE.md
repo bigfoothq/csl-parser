@@ -41,6 +41,10 @@ const errors = validate(ast);
 // [{line: 1, operation: 'WRITE', error: "Missing required attribute 'file'"}]
 ```
 
+### Error Format Rationale
+
+Parser throws strings for immediate developer feedback during parsing failures. Validator returns structured objects to enable programmatic error handling and bulk error reporting. This two-phase design separates syntax checking (fail-fast) from semantic validation (collect-all).
+
 ## Two-Phase Design
 
 1. **Parse Phase**: Syntax and structure validation only

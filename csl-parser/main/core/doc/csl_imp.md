@@ -1,3 +1,5 @@
+20250123
+
 # CSL Parser Implementation Guide
 
 ## Architecture Overview
@@ -23,7 +25,7 @@
 
 2. **Content Collection Phase**
    - Non-marker lines append to active content buffer
-   - Preserve exact bytes including mixed line endings (\r\n, \n, \r)
+   - All line endings normalized to LF (\n) during parsing
    - Marker lines validated against current state
    - Invalid state transitions throw immediately
    - Entire line must match marker pattern - no leading/trailing content
@@ -182,7 +184,8 @@ Example error messages:
 
 ```javascript
 // parser.js
-export function parse(text) {
+export function parse(text, options) {
+  // options.startDelimiter, options.endDelimiter
   // Returns AST or throws Error
 }
 
@@ -221,12 +224,22 @@ export function validate(ast) {
 **A**: State machine handles this. Invalid END in wrong state throws error.
 
 
-## Escape Sequence Contradiction
-**Concern**: Implementation lists "invalid escape sequences" as lexical errors, but spec says sequences like `\n` are literal text.  
-**Why it matters**: These are opposite behaviors - error vs. literal text. Implementation must match spec.  
-**Question**: Should implementation remove "invalid escape sequences" from error list to match spec?
+<<<END>>>
 
-ANSWER: Yes. Remove "invalid escape sequences" from lexical errors. Implementation must match spec - \n, \t etc. are literal text, not errors.
+<<<FILE>>>
+csl-parser/main/core/doc/csl_imp.md
+<<<SEARCH>>>
+**Parse Phase Errors** (parser throws immediately):
+- **Lexical Errors**:
+  - Malformed markers: missing delimiters, incomplete markers
+  - Unterminated quoted attributes
+  - Unknown operation names: Any `<---XXX--->` where XXX is not WRITE/RUN/SEARCH/TASKS/END/TO/REPLACE
+<<<REPLACE>>>
+**Parse Phase Errors** (parser throws immediately):
+- **Lexical Errors**:
+  - Malformed markers: missing delimiters, incomplete markers
+  - Unterminated quoted attributes
+  - Unknown operation names: Any `<---XXX--->` where XXX is not WRITE/RUN/SEARCH/TASKS/END/TO/REPLACE
 
 ## Whitespace Normalization Between Attributes
 **Concern**: Implementation doesn't specify whether `attr1="x"    attr2="y"` preserves multiple spaces or normalizes to single space.  
