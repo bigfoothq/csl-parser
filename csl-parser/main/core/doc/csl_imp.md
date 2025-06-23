@@ -69,24 +69,10 @@
 
 ## Error Handling Strategy
 
-### Error Information
-Parser errors:
-- Format: `throw new Error('Line ' + lineNum + ': ' + message)`
-- Line number (1-indexed)
-- Error type classification
-- Descriptive message
-- No partial results returned
-- Thrown immediately
-
-Validator errors:
-- Returned as array
-- Each error includes line, operation, message
-- All errors collected in single pass
-
-### Fail-Fast vs Collect-All
-- Parser: First error halts parsing immediately
-- Validator: Collects all errors before returning
-- Different strategies for different phases
+### Error Handling Strategy
+- Parser: Throws immediately on first error (fail-fast)
+- Validator: Collects all errors in single pass
+- See API.md for error formats
 
 ## Implementation Flow
 
@@ -153,47 +139,32 @@ Example error messages:
 - Return array of operation objects per TYPES.md schema
 - No validation of required fields (validator responsibility)
 
-## Post-Parse Validation
+<<<END>>>
 
-### Validator Contract
-- Input: AST from parser (may contain invalid operations)
-- Output: Array of validation errors or empty array if valid
-- No AST transformation - validator is read-only
-- Collects ALL errors in single pass (not fail-fast)
+<<<FILE>>>
+csl-parser/main/core/doc/csl_imp.md
+<<<SEARCH>>>
+## Whitespace Normalization Between Attributes
+**Concern**: Implementation doesn't specify whether `attr1="x"    attr2="y"` preserves multiple spaces or normalizes to single space.  
+**Why it matters**: Affects parser complexity and attribute string reconstruction.  
+**Question**: Should parser preserve exact whitespace between attributes or normalize to single spaces?
 
-### Validation Process
-1. Iterate through all operations in AST
-2. For each operation:
-   - Check required attributes exist
-   - Validate attribute value formats
-   - Check content constraints
-3. Collect errors with operation context and line numbers
-4. Return all errors found
+ANSWER - normalize to single space or do whatever so that  it's ok to have multiple spaces bewteen attributes
+<<<REPLACE>>>
 
-### Error Object Structure
-```javascript
-{
-  line: number,        // Line number from AST
-  operation: string,   // Operation type
-  error: string,       // Error message
-  field?: string       // Optional field name
-}
-```
+<<<END>>>
 
-## Export Signatures
+<<<FILE>>>
+csl-parser/main/core/doc/csl_imp.md
+<<<SEARCH>>>
+Invalid transitions throw immediately with line number.
 
-```javascript
-// parser.js
-export function parse(text, options) {
-  // options.startDelimiter, options.endDelimiter
-  // Returns AST or throws Error
-}
-
-// validator.js  
-export function validate(ast) {
-  // Returns ValidationError[]
-}
-```
+Example error messages:
+- `"Line 5: Unknown operation: INVALID"`
+- `"Line 3: WRITE marker not valid in RUN operation"`
+- `"Line 7: TASKS cannot be nested"`
+<<<REPLACE>>>
+Invalid transitions throw immediately with line number (e.g., `"Line 5: Unknown operation: INVALID"`).
 
 # CSL Implementation Q&A
 

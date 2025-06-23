@@ -1,293 +1,45 @@
-=== PROCESSED: 2025-06-23 10:36:32 ===
-SUCCESS Block 1: Created /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/API.md
-SUCCESS Block 2: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_reqs.md
-SUCCESS Block 3: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_reqs.md
-SUCCESS Block 4: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_reqs.md
-SUCCESS Block 5: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_reqs.md
-SUCCESS Block 6: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
-SUCCESS Block 7: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_reqs.md
-SUCCESS Block 8: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_reqs.md
-SUCCESS Block 9: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
+=== PROCESSED: 2025-06-23 11:29:54 ===
+SUCCESS Block 1: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/test-unit/cov/parser.cov.md
 ===
 
-## Edit Instructions for Priority Fixes
-
 <<<EXPLANATION>>>
-Create the missing API.md file to document the parser and validator function signatures, including options and return types.
+
+Rewriting the custom delimiters test section with more unique delimiters to make the tests clearer and avoid any confusion with the standard CSL syntax
+
 <<<FILE>>>
-csl-parser/main/core/doc/API.md
-<<<OVERWRITE>>>
-20250123
 
-# CSL Parser API
+csl-parser/main/core/test-unit/cov/parser.cov.md
 
-## Functions
-
-### parse(text, options?)
-
-Parses CSL text into an Abstract Syntax Tree (AST).
-
-**Parameters:**
-- `text` (string): The CSL text to parse
-- `options` (object, optional):
-  - `startDelimiter` (string): Custom start delimiter (default: `<---`)
-  - `endDelimiter` (string): Custom end delimiter (default: `--->`)
-
-**Returns:** 
-- Array of Operation objects (see TYPES.md)
-
-**Throws:** 
-- Error with message format: `"Line {lineNumber}: {errorMessage}"`
-- Throws on first syntax error encountered
-
-**Example:**
-```javascript
-import { parse } from './src/parser.js';
-
-const ast = parse(cslText);
-// or with custom delimiters
-const ast = parse(cslText, {
-  startDelimiter: '<<<',
-  endDelimiter: '>>>'
-});
-```
-
-### validate(ast)
-
-Validates an AST for semantic correctness.
-
-**Parameters:**
-- `ast` (Array): The AST returned by parse()
-
-**Returns:**
-- Array of ValidationError objects (empty if valid)
-
-**ValidationError structure:**
-```javascript
-{
-  line: number,        // Line number from AST
-  operation: string,   // Operation type
-  error: string,       // Error message
-  field?: string       // Optional field name
-}
-```
-
-**Example:**
-```javascript
-import { validate } from './src/validator.js';
-
-const errors = validate(ast);
-if (errors.length > 0) {
-  errors.forEach(error => {
-    console.error(`Line ${error.line}: ${error.error}`);
-  });
-}
-```
-<<<END>>>
-
-<<<EXPLANATION>>>
-Add END marker attributes rule and attribute name character rules to the main requirements document.
-<<<FILE>>>
-csl-parser/main/core/doc/csl_reqs.md
 <<<SEARCH>>>
-### Attributes
-- Format: `key="value"` or `key='value'`
-- Attribute names can contain any non-whitespace characters (but cannot be quoted)
-- Whitespace required between attributes
-- Whitespace allowed around `=` (e.g., `attr = "value"` valid)
-- Values must be quoted (unquoted values like `attr=value` are parse errors)
-- Empty values allowed: `attr=""`
-- Attributes must be on same line as operation marker
-- Escape sequences within values:
-  - `\"` → `"` (inside double quotes)
-  - `\'` → `'` (inside single quotes)  
-  - `\\` → `\`
-  - Other backslash sequences (e.g., `\n`, `\t`) are literal text
+## options.custom_delimiters
+
+### Using custom start/end delimiters
+
+- parse('<<<WRITE file="test.txt">>>
+content
 <<<REPLACE>>>
-### Attributes
-- Format: `key="value"` or `key='value'`
-- Attribute names follow XML naming rules: can contain letters, digits, hyphens, underscores, colons, and periods. Cannot contain spaces, quotes, equals, or angle brackets
-- At least one whitespace character required between operation name and first attribute
-- Whitespace required between attributes (multiple spaces normalized to single)
-- Whitespace allowed around `=` (e.g., `attr = "value"` valid)
-- Values must be quoted (unquoted values like `attr=value` are parse errors)
-- Empty values allowed: `attr=""`
-- Attributes must be on same line as operation marker
-- END markers cannot have attributes (`<---END--->` is the only valid form)
-- Escape sequences within values:
-  - `\"` → `"` (inside double quotes)
-  - `\'` → `'` (inside single quotes)  
-  - `\\` → `\`
-  - Other backslash sequences (e.g., `\n`, `\t`) are literal text
-<<<END>>>
+## options.custom_delimiters
 
-<<<EXPLANATION>>>
-Add explicit state transition table to the main requirements document.
-<<<FILE>>>
-csl-parser/main/core/doc/csl_reqs.md
-<<<SEARCH>>>
-### Search Operation Rules
-- TO marker only valid in SEARCH operations
-- If TO present, defines range replacement
-- If TO absent, defines single/multiple replacement
-- REPLACE marker required in all SEARCH operations
-- Replacement count defaults to 1 if not specified
-- Count must be positive integer or "all"
-<<<REPLACE>>>
-### Search Operation Rules
-- TO marker only valid in SEARCH operations
-- If TO present, defines range replacement
-- If TO absent, defines single/multiple replacement
-- REPLACE marker required in all SEARCH operations
-- Replacement count defaults to 1 if not specified
-- Count must be positive integer or "all"
+### Using custom start/end delimiters
 
-### State Transitions
+- parse('@[[[[WRITE file="test.txt"]]]]@
+content
+@[[[[END]]]]@', {startDelimiter: '@[[[[', endDelimiter: ']]]]@'}) 
+→ [{type: 'WRITE', line: 1, file: 'test.txt', content: 'content'}]
 
-Valid state transitions enforced by parser:
+- parse('@[[[[TASKS]]]]@
+@[[[[RUN]]]]@
+echo test
+@[[[[END]]]]@
+@[[[[END]]]]@', {startDelimiter: '@[[[[', endDelimiter: ']]]]@'}) 
+→ [{type: 'TASKS', line: 1, operations: [
+    {type: 'RUN', line: 2, content: 'echo test'}
+]}]
 
-| Current State | Valid Next Markers | Notes |
-|--------------|-------------------|-------|
-| (none) | WRITE, RUN, SEARCH, TASKS | Initial state |
-| WRITE | END | No other operations allowed |
-| RUN | END | No other operations allowed |
-| SEARCH (pattern) | TO, REPLACE | After initial SEARCH marker |
-| SEARCH (to) | REPLACE | After TO marker |
-| SEARCH (replace) | END | After REPLACE marker |
-| TASKS | WRITE, RUN, SEARCH, END | Can contain multiple operations |
-
-Inside TASKS:
-- When operation completes (END), state returns to TASKS
-- TASKS cannot be nested (parser throws error)
-- When TASKS ends, state returns to (none)
-<<<END>>>
-
-<<<EXPLANATION>>>
-Move case sensitivity clarification from Q&A to main requirements.
-<<<FILE>>>
-csl-parser/main/core/doc/csl_reqs.md
-<<<SEARCH>>>
-### Markers
-- Start delimiter: `<---` (default, configurable via parser options)
-- End delimiter: `--->` (default, configurable via parser options)
-- Format: `<---OPERATION attributes--->`
-- Must start at beginning of line
-- Case-sensitive
-- No spaces allowed within operation name or delimiters
-<<<REPLACE>>>
-### Markers
-- Start delimiter: `<---` (default, configurable via parser options)
-- End delimiter: `--->` (default, configurable via parser options)
-- Format: `<---OPERATION attributes--->`
-- Must start at beginning of line
-- Operation names are case-sensitive (WRITE, RUN, SEARCH, TASKS must be uppercase)
-- Attribute names are case-sensitive
-- No spaces allowed within operation name or delimiters
-<<<END>>>
-
-<<<EXPLANATION>>>
-Add parser vs validator responsibility section to clarify boundaries.
-<<<FILE>>>
-csl-parser/main/core/doc/csl_reqs.md
-<<<SEARCH>>>
-## Error Conditions
-
-### Parse Errors (thrown immediately)
-<<<REPLACE>>>
-## Component Responsibilities
-
-### Parser Enforces
-- Marker formation and syntax
-- State transitions (valid operations in current context)
-- Structural rules (proper nesting, END markers)
-- Attribute syntax (quotes, duplicates)
-- Lines starting with `<---` must form valid markers
-
-### Validator Enforces
-- Required attributes presence
-- Attribute value constraints (e.g., count must be positive integer or "all")
-- Content rules (empty content restrictions)
-- Semantic correctness
-
-## Error Conditions
-
-### Parse Errors (thrown immediately)
-<<<END>>>
-
-<<<EXPLANATION>>>
-Remove the escape sequence contradiction from the implementation guide Q&A section.
-<<<FILE>>>
-csl-parser/main/core/doc/csl_imp.md
-<<<SEARCH>>>
-## Escape Sequence Contradiction
-**Concern**: Implementation lists "invalid escape sequences" as lexical errors, but spec says sequences like `\n` are literal text.  
-**Why it matters**: These are opposite behaviors - error vs. literal text. Implementation must match spec.  
-**Question**: Should implementation remove "invalid escape sequences" from error list to match spec?
-
-ANSWER: Yes. Remove "invalid escape sequences" from lexical errors. Implementation must match spec - \n, \t etc. are literal text, not errors.
-<<<REPLACE>>>
-<<<END>>>
-
-<<<EXPLANATION>>>
-Update the lexical errors section to remove invalid escape sequences.
-<<<FILE>>>
-csl-parser/main/core/doc/csl_imp.md
-<<<SEARCH>>>
-**Parse Phase Errors** (parser throws immediately):
-- **Lexical Errors**:
-  - Malformed markers: missing delimiters, incomplete markers
-  - Unterminated quoted attributes
-  - Unknown operation names: Any `<---XXX--->` where XXX is not WRITE/RUN/SEARCH/TASKS/END/TO/REPLACE
-<<<REPLACE>>>
-**Parse Phase Errors** (parser throws immediately):
-- **Lexical Errors**:
-  - Malformed markers: missing delimiters, incomplete markers
-  - Unterminated quoted attributes
-  - Unknown operation names: Any `<---XXX--->` where XXX is not WRITE/RUN/SEARCH/TASKS/END/TO/REPLACE
-<<<END>>>
-
-<<<EXPLANATION>>>
-Add line ending normalization details to the main requirements.
-<<<FILE>>>
-csl-parser/main/core/doc/csl_reqs.md
-<<<SEARCH>>>
-### Content Handling
-- Content starts on the line after an operation marker
-- Content ends on the line before the END marker
-- All line endings normalized to LF (\n) during parsing
-- Platform-specific line endings handled at execution time
-<<<REPLACE>>>
-### Content Handling
-- Content starts on the line after an operation marker
-- Content ends on the line before the END marker
-- All line endings normalized to LF (\n) during parsing (following Git's approach)
-- Mixed line endings within a file are normalized consistently
-- Platform-specific line endings applied only during file write operations (execution phase)
-- Parser handles CRLF, LF, and CR inputs, all normalized to LF
-<<<END>>>
-
-<<<EXPLANATION>>>
-Update the date in the requirements file.
-<<<FILE>>>
-csl-parser/main/core/doc/csl_reqs.md
-<<<SEARCH>>>
-20250122
-
-# CSL (Clada Syntax Language) Specification
-<<<REPLACE>>>
-20250123
-
-# CSL (Clada Syntax Language) Specification
-<<<END>>>
-
-<<<EXPLANATION>>>
-Update the date in the implementation guide.
-<<<FILE>>>
-csl-parser/main/core/doc/csl_imp.md
-<<<SEARCH>>>
-# CSL Parser Implementation Guide
-<<<REPLACE>>>
-20250123
-
-# CSL Parser Implementation Guide
+- parse('@[[[[SEARCH file="config.json"]]]]@
+"debug": false
+@[[[[REPLACE]]]]@
+"debug": true
+@[[[[END]]]]@', {startDelimiter: '@[[[[', endDelimiter: ']]]]@'}) 
+→ [{type: 'SEARCH', line: 1, file: 'config.json', pattern: '"debug": false', replacement: '"debug": true'}]
 <<<END>>>

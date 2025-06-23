@@ -60,7 +60,7 @@ newValue
 <---END--->
 ```
 
-Range replacement:
+Range replacement (inclusive):
 ```
 <---SEARCH file="main.py"--->
 def process_data(
@@ -93,7 +93,7 @@ operations...
 
 ### Attributes
 - Format: `key="value"` or `key='value'`
-- Attribute names follow XML naming rules: can contain letters, digits, hyphens, underscores, colons, and periods. Cannot contain spaces, quotes, equals, or angle brackets
+- Attribute names can contain any non-whitespace characters except quotes, equals, or angle brackets
 - At least one whitespace character required between operation name and first attribute
 - Whitespace required between attributes (multiple spaces normalized to single)
 - Whitespace allowed around `=` (e.g., `attr = "value"` valid)
@@ -137,8 +137,8 @@ operations...
 
 ### Attribute Values
 - `count`: positive integer or "all"
-- `append`: "true" or "false"
-- `file`, `dir`, `version`: any string
+- `append`: "true" or "false" (case-sensitive)
+- `file`, `dir`, `version`: any string (including empty)
 
 ### Content Rules
 - Empty content = zero bytes between markers
@@ -158,7 +158,7 @@ operations...
 
 ### Search Operation Rules
 - TO marker only valid in SEARCH operations
-- If TO present, defines range replacement
+- If TO present, defines range replacement (inclusive - replaces from start of pattern through end of TO pattern)
 - If TO absent, defines single/multiple replacement
 - REPLACE marker required in all SEARCH operations
 - Replacement count defaults to 1 if not specified
@@ -221,22 +221,10 @@ Inside TASKS:
 - Parser throws on first error
 - Validator returns all errors found
 
-## Execution Considerations (Not Parser Responsibility)
-- Platform-specific line endings applied during file operations
-- SEARCH operations normalize both file and pattern for matching
-- Binary file detection prevents unwanted normalization
-
 ## Edge Cases
-- All markers (`<---OPERATION...>`, `<---TO--->`, `<---REPLACE--->`, `<---END--->`) must be complete lines with no other content
-- Lines starting with `<---` inside content blocks are treated as literal text unless they form valid state-transition markers:
-  - WRITE/RUN content: only `<---END--->`
-  - SEARCH pattern content: `<---TO--->`, `<---REPLACE--->`, `<---END--->`
-  - SEARCH to content: only `<---REPLACE--->`
-  - SEARCH replace content: only `<---END--->`
-- Partial markers (e.g., `<--` or `-->`) are valid content
+- Lines starting with `<---` must form complete valid markers (see State Transitions)
+- Partial markers (e.g., `<--` or `-->`) are treated as content
 - CSL syntax within content blocks is preserved as literal text
-- Mixed line endings preserved exactly
-- File paths may be empty strings but attribute must exist
 
 
 # CSL Requirements Q&A

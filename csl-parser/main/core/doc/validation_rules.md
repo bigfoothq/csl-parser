@@ -2,76 +2,19 @@
 
 # CSL Validation Rules
 
-This document specifies all semantic validation rules enforced after parsing.
+The validator enforces semantic rules after parsing. See CSL Requirements (csl_reqs.md) for the complete specification.
 
-## Validation Philosophy
-
-- Parser produces syntactically valid AST
-- Validator checks semantic/business rules
-- All errors collected in single pass
-- No AST transformation during validation
-
-## Operation-Specific Rules
-
-### WRITE Operation
-**Required attributes**: 
-- `file`: Must be present (can be empty string)
-
-**Optional attributes**:
-- `append`: If present, must be "true" or "false"
-
-**Content rules**:
-- Empty content allowed
-
-### RUN Operation
-**Required attributes**: None
-
-**Optional attributes**:
-- `dir`: Any string value
-
-**Content rules**:
-- Content cannot be empty
-- Must contain at least one non-whitespace character
-
-### SEARCH Operation
-**Required attributes**:
-- `file`: Must be present (can be empty string)
-
-**Optional attributes**:
-- `count`: Must be positive integer or "all"
-
-**Content rules**:
-- `pattern` cannot be empty
-- `to` (if present) cannot be empty
-- `replacement` can be empty (indicates deletion)
-
-### TASKS Operation
-**Required attributes**: None
-
-**Optional attributes**:
-- `version`: Any string value
-
-**Content rules**:
-- Empty TASKS allowed (operations array can be empty)
-- Cannot contain nested TASKS
-
-## Validation Error Format
-
-```typescript
-interface ValidationError {
-  line: number;        // Line number from operation
-  operation: string;   // Operation type (WRITE, RUN, etc)
-  error: string;       // Human-readable error message
-  field?: string;      // Affected field name if applicable
-}
-```
+## Validation Process
+- Collects all errors in single pass
+- No AST transformation
+- Returns array of errors (see API.md for format)
 
 ## Error Messages
-
-Required exact error messages (validator must output these verbatim):
-
-- Missing required attribute: `"Missing required attribute 'file'"`
-- Invalid attribute value: `"Invalid value for 'count': must be positive integer or 'all'"`
-- Empty content: `"Empty content not allowed for RUN operation"`
-- Empty pattern: `"Empty search pattern not allowed"`
-- Nested TASKS: `"TASKS cannot contain other TASKS operations"`
+Validator must output these exact messages:
+- `"Missing required attribute 'file'"`
+- `"Invalid value for 'count': must be positive integer or 'all'"` 
+- `"Invalid value for 'append': must be 'true' or 'false'"`
+- `"Empty content not allowed for RUN operation"`
+- `"Empty search pattern not allowed"`
+- `"Empty TO pattern not allowed"`
+- `"TASKS cannot contain other TASKS operations"`
