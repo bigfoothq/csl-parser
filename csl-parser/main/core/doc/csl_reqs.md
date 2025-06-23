@@ -92,10 +92,10 @@ operations...
 
 ### Attributes
 - Format: `key="value"` or `key='value'`
-- Attribute names can contain any non-whitespace characters
+- Attribute names can contain any non-whitespace characters (but cannot be quoted)
 - Whitespace required between attributes
 - Whitespace allowed around `=` (e.g., `attr = "value"` valid)
-- Values must be quoted
+- Values must be quoted (unquoted values like `attr=value` are parse errors)
 - Empty values allowed: `attr=""`
 - Attributes must be on same line as operation marker
 - Escape sequences within values:
@@ -175,6 +175,7 @@ operations...
 - Empty RUN content
 - Empty TO patterns
 - Nested TASKS blocks
+- Note: Empty TASKS (no operations) is valid
 
 ### Error Reporting
 - Line numbers in all errors are 1-indexed

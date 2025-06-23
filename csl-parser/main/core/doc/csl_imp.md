@@ -30,10 +30,16 @@
    - Partial line matches are parse errors, not content
 
 ### State Management
-- Single state variable tracking current parse context
-- Operation stack for TASKS nesting (max depth 1)
-- Stack tracks return state (TOP_LEVEL or TASKS_LEVEL)
-- TASKS can contain WRITE, RUN, SEARCH (not other TASKS)
+- Single state variable with compound values:
+  - `null` (no active operation)
+  - `'WRITE'`
+  - `'RUN'`
+  - `'SEARCH_PATTERN'`
+  - `'SEARCH_TO'`
+  - `'SEARCH_REPLACEMENT'`
+  - `'TASKS'`
+- Boolean `insideTasks` tracks if currently inside TASKS block
+- No stack needed since TASKS cannot nest
 - Content buffers per operation type:
   - Single buffer: WRITE, RUN
   - Triple buffer: SEARCH (pattern, to, replacement)
@@ -63,6 +69,7 @@
 
 ### Error Information
 Parser errors:
+- Format: `throw new Error('Line ' + lineNum + ': ' + message)`
 - Line number (1-indexed)
 - Error type classification
 - Descriptive message
@@ -82,13 +89,13 @@ Validator errors:
 ## Implementation Flow
 
 ### Main Parse Loop
-1. Initialize state machine to TOP_LEVEL
+1. Initialize state to null, insideTasks to false
 2. Initialize line counter to 1
 3. Process each line sequentially, increment counter after each
 4. For `<---` lines: attempt marker parse
 5. For successful markers: validate state transition
 6. For content lines: append to current buffer
-7. On END markers: complete current operation
+7. On END markers: complete current operation, update state
 8. Return complete AST or throw error
 
 ### Attribute Parsing Algorithm
@@ -105,21 +112,20 @@ Validator errors:
 
 ### State Transition Validation
 
-State transition table:
+Valid transitions by current state:
+- `null`: Can start WRITE, RUN, SEARCH, or TASKS
+- `WRITE`: Only END valid
+- `RUN`: Only END valid
+- `SEARCH_PATTERN`: TO or REPLACE valid
+- `SEARCH_TO`: Only REPLACE valid
+- `SEARCH_REPLACEMENT`: Only END valid
+- `TASKS`: WRITE, RUN, SEARCH, or END valid
 
-| Current State | Valid Next Markers | Next State |
-|--------------|-------------------|------------|
-| TOP_LEVEL | WRITE, RUN, SEARCH, TASKS | COLLECTING_[OPERATION] |
-| COLLECTING_WRITE | END | TOP_LEVEL or TASKS_LEVEL |
-| COLLECTING_RUN | END | TOP_LEVEL or TASKS_LEVEL |
-| COLLECTING_SEARCH | TO, REPLACE | COLLECTING_SEARCH_TO or COLLECTING_SEARCH_REPLACE |
-| COLLECTING_SEARCH_TO | REPLACE | COLLECTING_SEARCH_REPLACE |
-| COLLECTING_SEARCH_REPLACE | END | TOP_LEVEL or TASKS_LEVEL |
-| COLLECTING_TASKS | WRITE, RUN, SEARCH, END | TASKS_LEVEL or TOP_LEVEL |
-| TASKS_LEVEL | WRITE, RUN, SEARCH | COLLECTING_[OPERATION] |
+When END marker encountered:
+- If `insideTasks` true and state is not TASKS: set state to TASKS
+- Otherwise: set state to null and insideTasks to false
 
-- Invalid transitions throw immediately
-- Track return state (TOP_LEVEL or TASKS_LEVEL) on operation stack
+Invalid transitions throw immediately with line number.
 
 ## Content Handling
 - Join content lines with LF (\n)
@@ -163,6 +169,20 @@ State transition table:
 }
 ```
 
+## Export Signatures
+
+```javascript
+// parser.js
+export function parse(text) {
+  // Returns AST or throws Error
+}
+
+// validator.js  
+export function validate(ast) {
+  // Returns ValidationError[]
+}
+```
+
 # CSL Implementation Q&A
 
 ## Marker Regex Pattern
@@ -179,7 +199,7 @@ State transition table:
 ## TO Marker State
 **Q**: How track if TO seen to validate REPLACE requirement?
 
-**A**: Add `COLLECTING_SEARCH_TO` state. Transition through states enforces order.
+**A**: Use compound states: SEARCH_PATTERN → SEARCH_TO → SEARCH_REPLACEMENT. Transition through states enforces order.
 
 ## Duplicate Attribute Detection
 **Q**: Map silently overwrites duplicates instead of detecting.
@@ -213,3 +233,7 @@ ANSWER - normalize to single space or do whatever so that  it's ok to have multi
 ## Invalid Attribute Values
 **Q**: Does parser validate that count="all" or count="3"? What about count="invalid"?
 **A**: Parser extracts attribute as-is. Validator checks if count is positive integer or "all".
+
+## Invalid Operation Transitions
+**Q**: What if `<---WRITE--->` appears while in RUN state?
+**A**: Parser throws error. Must have END marker before starting new operation.
