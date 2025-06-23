@@ -47,6 +47,7 @@ export function parse(text: string, options?: ParseOptions): Operation[] {
       const opName = match[1];
       const attrString = match[3] || '';
       console.log(`Line ${lineNum}: Matched marker opName="${opName}", attrString="${attrString}"`);
+      console.log(`Line ${lineNum}: Matched marker opName="${opName}", attrString="${attrString}"`);
       
       // Handle END marker
       if (opName === 'END') {
@@ -118,7 +119,15 @@ export function parse(text: string, options?: ParseOptions): Operation[] {
     else {
       // Content line
       if (state && currentOp) {
-        contentBuffer.push(line);
+        if (state === 'SEARCH_PATTERN') {
+          searchPattern.push(line);
+        } else if (state === 'SEARCH_TO') {
+          searchTo.push(line);
+        } else if (state === 'SEARCH_REPLACEMENT') {
+          searchReplacement.push(line);
+        } else {
+          contentBuffer.push(line);
+        }
       }
     }
     

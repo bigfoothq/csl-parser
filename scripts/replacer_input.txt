@@ -1,56 +1,39 @@
-=== PROCESSED: 2025-06-23 12:44:05 ===
+=== PROCESSED: 2025-06-23 13:34:22 ===
 SUCCESS Block 1: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/src/parser.ts
 ===
 
-Perfect! Now I can see the issue clearly. The parser is processing all lines, but:
+Looking at the test output, I can see that the SEARCH operation is not properly collecting content. The parser is creating empty strings for `pattern` and `replacement` instead of collecting the content between markers.
 
-1. We're NOT seeing "Content line" logs for lines 2, 4, 6, etc.
-2. We're NOT seeing "Set state to SEARCH_REPLACEMENT" logs
-3. We're NOT seeing "Completed operation" logs
-
-This means the parser is not recognizing `<---REPLACE--->` and `<---TO--->` as markers! They're being treated as content lines, but the content handling isn't logging them either.
-
-The issue is that `<---REPLACE--->` doesn't start with the delimiter check. Let me look at the pattern:
-
-```typescript
-if (line.startsWith(startDelim)) {
-```
-
-This should match `<---REPLACE--->` since it starts with `<---`. So the issue must be in the regex match or the subsequent handling.
-
-Looking at the processing:
-- Line 3: `"<---REPLACE--->"` is processed but no state change is logged
-- Line 5: `"<---END--->"` is processed but no completion is logged
-
-This suggests the parser is entering the `if (line.startsWith(startDelim))` block but then something is failing silently.
-
-Let me add more specific debugging:
+The issue is in the parser implementation - it's not properly handling content collection for SEARCH operations. Let me fix this:
 
 <<<EXPLANATION>>>
-Adding debug logging to understand why REPLACE and TO markers aren't being handled correctly.
+The parser needs to properly collect content for SEARCH operations based on the current state. When in SEARCH_PATTERN state, content should go to searchPattern buffer. When in SEARCH_TO state, content should go to searchTo buffer. When in SEARCH_REPLACEMENT state, content should go to searchReplacement buffer.
+<<<END>>>
 
 <<<FILE>>>
 csl-parser/main/core/src/parser.ts
-
 <<<SEARCH>>>
-      const match = line.match(markerRegex);
-      
-      if (!match) {
-        throw new Error(`Line ${lineNum}: Malformed marker`);
+    else {
+      // Content line
+      if (state && currentOp) {
+        contentBuffer.push(line);
       }
-      
-      const opName = match[1];
-      const attrString = match[3] || '';
+    }
 <<<REPLACE>>>
-      const match = line.match(markerRegex);
-      
-      if (!match) {
-        throw new Error(`Line ${lineNum}: Malformed marker`);
+    else {
+      // Content line
+      if (state && currentOp) {
+        if (state === 'SEARCH_PATTERN') {
+          searchPattern.push(line);
+        } else if (state === 'SEARCH_TO') {
+          searchTo.push(line);
+        } else if (state === 'SEARCH_REPLACEMENT') {
+          searchReplacement.push(line);
+        } else {
+          contentBuffer.push(line);
+        }
       }
-      
-      const opName = match[1];
-      const attrString = match[3] || '';
-      console.log(`Line ${lineNum}: Matched marker opName="${opName}", attrString="${attrString}"`);
+    }
 <<<END>>>
 
-This will show us what opName is being extracted from REPLACE and TO markers.
+Now let's run the test again to see if this fixes the issue.
