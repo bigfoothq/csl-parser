@@ -45,16 +45,23 @@ export function parse(text: string, options?: ParseOptions): Operation[] {
       const match = line.match(markerRegex);
       
       if (!match) {
-        // Check for specific malformed cases
-        if (line.endsWith(' ' + endDelim)) {
-          throw new Error(`Line ${lineNum}: Malformed marker`);
-        } else if (!line.endsWith(endDelim)) {
-          throw new Error(`Line ${lineNum}: Malformed marker`);
-        } else if (line === startDelim + endDelim) {
-          throw new Error(`Line ${lineNum}: Malformed marker`);
-        } else if (line.includes(' extra text')) {
+        // A line starting with the delimiter that doesn't match the regex is either
+        // content (if inside an op and not otherwise an error) or an error.
+        
+        // This is always an error: extra content on the same line as a marker-like sequence.
+        const trimmed = line.trim();
+        if (trimmed.includes(endDelim) && !trimmed.endsWith(endDelim)) {
           throw new Error(`Line ${lineNum}: Content not allowed on marker line`);
-        } else {
+        }
+
+        if (state) { // Inside an operation, other malformations are treated as content.
+          if (state === 'SEARCH_PATTERN') { searchPattern.push(line); }
+          else if (state === 'SEARCH_TO') { searchTo.push(line); }
+          else if (state === 'SEARCH_REPLACEMENT') { searchReplacement.push(line); }
+          else { contentBuffer.push(line); }
+          lineNum++;
+          continue;
+        } else { // Outside an operation, any malformed marker is a syntax error.
           throw new Error(`Line ${lineNum}: Malformed marker`);
         }
       }
