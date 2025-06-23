@@ -94,7 +94,7 @@ operations...
 - Format: `key="value"` or `key='value'`
 - Attribute names can contain any non-whitespace characters
 - Whitespace required between attributes
-- Whitespace allowed around `=`
+- Whitespace allowed around `=` (e.g., `attr = "value"` valid)
 - Values must be quoted
 - Empty values allowed: `attr=""`
 - Attributes must be on same line as operation marker
@@ -207,7 +207,7 @@ operations...
 **A**: State-transition markers depend on current operation:
 - WRITE/RUN content: only `<---END--->`
 - SEARCH pattern content: `<---TO--->`, `<---REPLACE--->`, `<---END--->`
-- SEARCH end content: only `<---REPLACE--->`
+- SEARCH to content: only `<---REPLACE--->`
 - SEARCH replace content: only `<---END--->`
 
 Any other marker (like `<---WRITE file="test"--->`) is literal text.

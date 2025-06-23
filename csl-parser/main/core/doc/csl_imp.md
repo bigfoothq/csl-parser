@@ -44,7 +44,7 @@
 - **Lexical Errors**:
   - Malformed markers: missing delimiters, incomplete markers
   - Unterminated quoted attributes
-  - Unknown operation names (not WRITE, RUN, SEARCH, TASKS)
+  - Unknown operation names: Any `<---XXX--->` where XXX is not WRITE/RUN/SEARCH/TASKS/END/TO/REPLACE
 - **Syntactic Errors**:
   - Invalid marker for current state
   - Nested TASKS blocks
@@ -93,7 +93,7 @@ Validator errors:
 
 ### Attribute Parsing Algorithm
 1. Parse character-by-character with quote state tracking
-2. For each token: extract key=value pattern
+2. For each token: extract key=value pattern using `/(\S+)\s*=\s*("[^"]*"|'[^']*')/`
 3. Handle quoted values with escape processing
 4. Escape sequences processed left-to-right, single pass
 5. Any non-whitespace allowed in attribute names
@@ -104,10 +104,22 @@ Validator errors:
 10. No validation of attribute values (e.g., count="invalid" accepted)
 
 ### State Transition Validation
-- Maintain transition table for valid state changes
-- Check marker type against current state
-- Update state and initialize appropriate buffers
-- Track TASKS depth for nesting validation
+
+State transition table:
+
+| Current State | Valid Next Markers | Next State |
+|--------------|-------------------|------------|
+| TOP_LEVEL | WRITE, RUN, SEARCH, TASKS | COLLECTING_[OPERATION] |
+| COLLECTING_WRITE | END | TOP_LEVEL or TASKS_LEVEL |
+| COLLECTING_RUN | END | TOP_LEVEL or TASKS_LEVEL |
+| COLLECTING_SEARCH | TO, REPLACE | COLLECTING_SEARCH_TO or COLLECTING_SEARCH_REPLACE |
+| COLLECTING_SEARCH_TO | REPLACE | COLLECTING_SEARCH_REPLACE |
+| COLLECTING_SEARCH_REPLACE | END | TOP_LEVEL or TASKS_LEVEL |
+| COLLECTING_TASKS | WRITE, RUN, SEARCH, END | TASKS_LEVEL or TOP_LEVEL |
+| TASKS_LEVEL | WRITE, RUN, SEARCH | COLLECTING_[OPERATION] |
+
+- Invalid transitions throw immediately
+- Track return state (TOP_LEVEL or TASKS_LEVEL) on operation stack
 
 ## Content Handling
 - Join content lines with LF (\n)

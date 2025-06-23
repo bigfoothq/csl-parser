@@ -52,7 +52,7 @@ This document specifies all semantic validation rules enforced after parsing.
 - `version`: Any string value
 
 **Content rules**:
-- Must contain at least one operation
+- Empty TASKS allowed (operations array can be empty)
 - Cannot contain nested TASKS
 
 ## Validation Error Format
@@ -68,7 +68,7 @@ interface ValidationError {
 
 ## Error Messages
 
-Standardized error messages for consistency:
+Required exact error messages (validator must output these verbatim):
 
 - Missing required attribute: `"Missing required attribute 'file'"`
 - Invalid attribute value: `"Invalid value for 'count': must be positive integer or 'all'"`

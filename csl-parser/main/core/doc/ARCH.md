@@ -4,5 +4,5 @@
 
 ## Components
 
-- parser: converts CSL text to AST through single-pass state machine processing
-- validator: checks semantic rules on AST, reports all violations
+- parser: converts CSL text to AST through single-pass state machine processing (`main/core/src/parser.js`)
+- validator: checks semantic rules on AST, reports all violations (`main/core/src/validator.js`)
