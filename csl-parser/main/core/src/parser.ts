@@ -21,6 +21,26 @@ export function parse(text: string, options?: ParseOptions): Operation[] {
   // Build regex for markers: ^<---(\w+)(\s+(.*))?--->$
   const markerRegex = new RegExp(`^${startEscaped}(\\w+)(\\s+(.*))?${endEscaped}$`);
   
+  // Helper to check if an operation is valid for current state
+  const isValidOperationForState = (opName: string, currentState: string | null): boolean => {
+    if (!currentState) {
+      // At top level - only operation starters are valid
+      return ['WRITE', 'RUN', 'SEARCH', 'TASKS'].includes(opName);
+    } else if (currentState === 'TASKS') {
+      // In TASKS - operation starters and END are valid
+      return ['WRITE', 'RUN', 'SEARCH', 'END'].includes(opName);
+    } else if (currentState === 'WRITE' || currentState === 'RUN') {
+      return opName === 'END';
+    } else if (currentState === 'SEARCH_PATTERN') {
+      return ['TO', 'REPLACE', 'END'].includes(opName);
+    } else if (currentState === 'SEARCH_TO') {
+      return opName === 'REPLACE';
+    } else if (currentState === 'SEARCH_REPLACEMENT') {
+      return opName === 'END';
+    }
+    return false;
+  };
+  
   const lines = text.split(/\r\n|\r|\n/);
   const operations: Operation[] = [];
   
@@ -71,6 +91,27 @@ export function parse(text: string, options?: ParseOptions): Operation[] {
         // Line starts with delimiter but doesn't match pattern
         console.log(`  Marker regex failed to match`);
         console.log(`  Current state: ${state}`);
+        
+        // Check if this looks like a marker with trailing content
+        // Build a regex that matches up to and including the end delimiter
+        const partialMarkerRegex = new RegExp(`^${startEscaped}(\\w+)(\\s+(.*))?${endEscaped}`);
+        const partialMatch = line.match(partialMarkerRegex);
+        
+        if (partialMatch) {
+          const opName = partialMatch[1];
+          console.log(`  Found partial marker: ${opName}`);
+          
+          // Check if this would be a valid state-transition marker for current state
+          const wouldBeValidMarker = isValidOperationForState(opName, state);
+          console.log(`  Would be valid marker: ${wouldBeValidMarker}`);
+          
+          // If it would be a valid marker but has trailing content, that's an error
+          if (wouldBeValidMarker && line.length > partialMatch[0].length) {
+            console.log(`  Has trailing content after valid marker`);
+            throw new Error(`Line ${lineNum}: Content not allowed on marker line`);
+          }
+        }
+        
         if (!state || state === 'TASKS') {
           // At top level - this is an error
           console.log(`  Throwing malformed marker error`);
