@@ -1,143 +1,293 @@
-=== PROCESSED: 2025-06-23 15:21:24 ===
-SUCCESS Block 1: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/src/parser.ts
-SUCCESS Block 2: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/src/parser.ts
+=== PROCESSED: 2025-06-23 15:41:28 ===
+SUCCESS Block 1: Created /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/validator.cov.md
 ===
 
-You're right - I need to look at the actual code. I see the issue now. The edits I suggested aren't applied in the code you pasted. Let me trace through what needs to happen:
-
-The problem is in this section where we check if a line starts with the delimiter but doesn't match the full marker regex:
-
-```typescript
-} else {
-  // Line starts with delimiter but doesn't match pattern
-  console.log(`  Marker regex failed to match`);
-  console.log(`  Current state: ${state}`);
-  if (!state || state === 'TASKS') {
-    // At top level - this is an error
-    console.log(`  Throwing malformed marker error`);
-    throw new Error(`Line ${lineNum}: Malformed marker`);
-  }
-  // In content block - treat as literal content
-  console.log(`  In content block - treating as literal content`);
-}
-```
-
-For the test case `<---END---> extra text`, we need to detect that this is a valid marker pattern with trailing content BEFORE we decide to treat it as literal content.
-
-Here are the corrected edits:
-
-<<<EXPLANATION>>>
-Add a helper function to check if an operation is valid for the current state. This will be used to determine if we should throw a "content on marker line" error.
+Looking at the validation rules and requirements, I'll generate a comprehensive `validator.cov.md` with 2-layer nesting as requested.
 
 <<<FILE>>>
-csl-parser/main/core/src/parser.ts
+csl-parser/main/core/doc/validator.cov.md
+<<<OVERWRITE>>>
+20250123
 
-<<<SEARCH>>>
-export function parse(text: string, options?: ParseOptions): Operation[] {
-  const startDelim = options?.startDelimiter || '<---';
-  const endDelim = options?.endDelimiter || '--->';
-  
-  // Escape special regex characters
-  const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const startEscaped = escapeRegex(startDelim);
-  const endEscaped = escapeRegex(endDelim);
-  
-  // Build regex for markers: ^<---(\w+)(\s+(.*))?--->$
-  const markerRegex = new RegExp(`^${startEscaped}(\\w+)(\\s+(.*))?${endEscaped}$`);
-<<<REPLACE>>>
-export function parse(text: string, options?: ParseOptions): Operation[] {
-  const startDelim = options?.startDelimiter || '<---';
-  const endDelim = options?.endDelimiter || '--->';
-  
-  // Escape special regex characters
-  const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const startEscaped = escapeRegex(startDelim);
-  const endEscaped = escapeRegex(endDelim);
-  
-  // Build regex for markers: ^<---(\w+)(\s+(.*))?--->$
-  const markerRegex = new RegExp(`^${startEscaped}(\\w+)(\\s+(.*))?${endEscaped}$`);
-  
-  // Helper to check if an operation is valid for current state
-  const isValidOperationForState = (opName: string, currentState: string | null): boolean => {
-    if (!currentState) {
-      // At top level - only operation starters are valid
-      return ['WRITE', 'RUN', 'SEARCH', 'TASKS'].includes(opName);
-    } else if (currentState === 'TASKS') {
-      // In TASKS - operation starters and END are valid
-      return ['WRITE', 'RUN', 'SEARCH', 'END'].includes(opName);
-    } else if (currentState === 'WRITE' || currentState === 'RUN') {
-      return opName === 'END';
-    } else if (currentState === 'SEARCH_PATTERN') {
-      return ['TO', 'REPLACE', 'END'].includes(opName);
-    } else if (currentState === 'SEARCH_TO') {
-      return opName === 'REPLACE';
-    } else if (currentState === 'SEARCH_REPLACEMENT') {
-      return opName === 'END';
-    }
-    return false;
-  };
+# CSL Validator Covenant
+
+validate(ast) → ValidationError[]
+
+## Test Implementation Notes
+
+- Validator returns array of ALL errors found (empty array if valid)
+- Error format: `{line: number, operation: string, error: string, field?: string}`
+- Line numbers come from AST operation objects
+- Tests should verify exact error messages from validation_rules.md
+
+## required_fields
+
+### write_operations
+
+#### WRITE missing file attribute
+
+- validate([{type: 'WRITE', line: 1, content: 'hello'}])
+→ [{line: 1, operation: 'WRITE', error: "Missing required attribute 'file'"}]
+
+- validate([{type: 'WRITE', line: 5, append: 'true', content: 'data'}])
+→ [{line: 5, operation: 'WRITE', error: "Missing required attribute 'file'"}]
+
+### search_operations
+
+#### SEARCH missing file attribute
+
+- validate([{type: 'SEARCH', line: 3, pattern: 'old', replacement: 'new'}])
+→ [{line: 3, operation: 'SEARCH', error: "Missing required attribute 'file'"}]
+
+- validate([{type: 'SEARCH', line: 10, count: '2', pattern: 'find', to: 'end', replacement: 'replace'}])
+→ [{line: 10, operation: 'SEARCH', error: "Missing required attribute 'file'"}]
+
+### valid_operations
+
+#### Operations with all required fields
+
+- validate([{type: 'WRITE', line: 1, file: 'test.txt', content: 'hello'}])
+→ []
+
+- validate([{type: 'RUN', line: 2, content: 'echo test'}])
+→ []
+
+- validate([{type: 'SEARCH', line: 3, file: 'app.js', pattern: 'old', replacement: 'new'}])
+→ []
+
+- validate([{type: 'TASKS', line: 4, operations: []}])
+→ []
+
+## attribute_validation
+
+### count_values
+
+#### Invalid count attribute values
+
+- validate([{type: 'SEARCH', line: 1, file: 'test.js', count: '0', pattern: 'x', replacement: 'y'}])
+→ [{line: 1, operation: 'SEARCH', error: "Invalid value for 'count': must be positive integer or 'all'", field: 'count'}]
+
+- validate([{type: 'SEARCH', line: 2, file: 'test.js', count: '-5', pattern: 'x', replacement: 'y'}])
+→ [{line: 2, operation: 'SEARCH', error: "Invalid value for 'count': must be positive integer or 'all'", field: 'count'}]
+
+- validate([{type: 'SEARCH', line: 3, file: 'test.js', count: 'invalid', pattern: 'x', replacement: 'y'}])
+→ [{line: 3, operation: 'SEARCH', error: "Invalid value for 'count': must be positive integer or 'all'", field: 'count'}]
+
+- validate([{type: 'SEARCH', line: 4, file: 'test.js', count: '3.14', pattern: 'x', replacement: 'y'}])
+→ [{line: 4, operation: 'SEARCH', error: "Invalid value for 'count': must be positive integer or 'all'", field: 'count'}]
+
+#### Valid count values
+
+- validate([{type: 'SEARCH', line: 1, file: 'test.js', count: '1', pattern: 'x', replacement: 'y'}])
+→ []
+
+- validate([{type: 'SEARCH', line: 2, file: 'test.js', count: '999', pattern: 'x', replacement: 'y'}])
+→ []
+
+- validate([{type: 'SEARCH', line: 3, file: 'test.js', count: 'all', pattern: 'x', replacement: 'y'}])
+→ []
+
+### append_values
+
+#### Invalid append attribute values
+
+- validate([{type: 'WRITE', line: 1, file: 'log.txt', append: 'yes', content: 'data'}])
+→ [{line: 1, operation: 'WRITE', error: "Invalid value for 'append': must be 'true' or 'false'", field: 'append'}]
+
+- validate([{type: 'WRITE', line: 2, file: 'log.txt', append: 'TRUE', content: 'data'}])
+→ [{line: 2, operation: 'WRITE', error: "Invalid value for 'append': must be 'true' or 'false'", field: 'append'}]
+
+- validate([{type: 'WRITE', line: 3, file: 'log.txt', append: '1', content: 'data'}])
+→ [{line: 3, operation: 'WRITE', error: "Invalid value for 'append': must be 'true' or 'false'", field: 'append'}]
+
+#### Valid append values
+
+- validate([{type: 'WRITE', line: 1, file: 'log.txt', append: 'true', content: 'data'}])
+→ []
+
+- validate([{type: 'WRITE', line: 2, file: 'log.txt', append: 'false', content: 'data'}])
+→ []
+
+### unknown_attributes
+
+#### Unknown attributes are ignored
+
+- validate([{type: 'WRITE', line: 1, file: 'test.txt', unknown: 'value', custom: '123', content: 'data'}])
+→ []
+
+- validate([{type: 'RUN', line: 2, extra: 'ignored', content: 'echo test'}])
+→ []
+
+## content_validation
+
+### run_empty_content
+
+#### Empty RUN content not allowed
+
+- validate([{type: 'RUN', line: 1, content: ''}])
+→ [{line: 1, operation: 'RUN', error: "Empty content not allowed for RUN operation"}]
+
+- validate([{type: 'RUN', line: 5, dir: '/tmp', content: ''}])
+→ [{line: 5, operation: 'RUN', error: "Empty content not allowed for RUN operation"}]
+
+#### Valid RUN content
+
+- validate([{type: 'RUN', line: 1, content: 'echo test'}])
+→ []
+
+- validate([{type: 'RUN', line: 2, content: ' '}])
+→ []
+
+### search_patterns
+
+#### Empty search patterns not allowed
+
+- validate([{type: 'SEARCH', line: 1, file: 'test.js', pattern: '', replacement: 'new'}])
+→ [{line: 1, operation: 'SEARCH', error: "Empty search pattern not allowed"}]
+
+- validate([{type: 'SEARCH', line: 3, file: 'app.py', pattern: '', to: 'end', replacement: 'code'}])
+→ [{line: 3, operation: 'SEARCH', error: "Empty search pattern not allowed"}]
+
+#### Empty TO patterns not allowed
+
+- validate([{type: 'SEARCH', line: 2, file: 'main.c', pattern: 'start', to: '', replacement: 'new'}])
+→ [{line: 2, operation: 'SEARCH', error: "Empty TO pattern not allowed"}]
+
+#### Valid search patterns
+
+- validate([{type: 'SEARCH', line: 1, file: 'test.js', pattern: 'find', replacement: 'replace'}])
+→ []
+
+- validate([{type: 'SEARCH', line: 2, file: 'test.js', pattern: ' ', replacement: 'space'}])
+→ []
+
+### valid_empty_content
+
+#### Empty WRITE content is valid
+
+- validate([{type: 'WRITE', line: 1, file: 'empty.txt', content: ''}])
+→ []
+
+#### Empty REPLACE content is valid (deletion)
+
+- validate([{type: 'SEARCH', line: 1, file: 'test.js', pattern: 'remove', replacement: ''}])
+→ []
+
+- validate([{type: 'SEARCH', line: 2, file: 'clean.py', pattern: 'start', to: 'end', replacement: ''}])
+→ []
+
+## nested_validation
+
+### tasks_in_tasks
+
+#### Direct TASKS nesting
+
+- validate([{type: 'TASKS', line: 1, operations: [
+    {type: 'TASKS', line: 2, operations: []}
+  ]}])
+→ [{line: 2, operation: 'TASKS', error: "TASKS cannot contain other TASKS operations"}]
+
+- validate([{type: 'TASKS', line: 5, version: '1.0', operations: [
+    {type: 'WRITE', line: 6, file: 'test.txt', content: 'hello'},
+    {type: 'TASKS', line: 7, operations: []},
+    {type: 'RUN', line: 8, content: 'echo done'}
+  ]}])
+→ [{line: 7, operation: 'TASKS', error: "TASKS cannot contain other TASKS operations"}]
+
+### deep_nesting
+
+#### Deeply nested TASKS detection
+
+- validate([{type: 'TASKS', line: 1, operations: [
+    {type: 'WRITE', line: 2, file: 'a.txt', content: 'a'},
+    {type: 'TASKS', line: 3, operations: [
+      {type: 'TASKS', line: 4, operations: []}
+    ]}
+  ]}])
+→ [
+  {line: 3, operation: 'TASKS', error: "TASKS cannot contain other TASKS operations"},
+  {line: 4, operation: 'TASKS', error: "TASKS cannot contain other TASKS operations"}
+]
+
+#### Valid TASKS without nesting
+
+- validate([{type: 'TASKS', line: 1, operations: [
+    {type: 'WRITE', line: 2, file: 'test.txt', content: 'data'},
+    {type: 'RUN', line: 3, content: 'npm test'},
+    {type: 'SEARCH', line: 4, file: 'app.js', pattern: 'old', replacement: 'new'}
+  ]}])
+→ []
+
+## edge_cases
+
+### multiple_errors
+
+#### Multiple errors on same operation
+
+- validate([{type: 'WRITE', line: 1, append: 'invalid', content: 'data'}])
+→ [
+  {line: 1, operation: 'WRITE', error: "Missing required attribute 'file'"},
+  {line: 1, operation: 'WRITE', error: "Invalid value for 'append': must be 'true' or 'false'", field: 'append'}
+]
+
+- validate([{type: 'SEARCH', line: 5, count: 'bad', pattern: '', replacement: 'new'}])
+→ [
+  {line: 5, operation: 'SEARCH', error: "Missing required attribute 'file'"},
+  {line: 5, operation: 'SEARCH', error: "Invalid value for 'count': must be positive integer or 'all'", field: 'count'},
+  {line: 5, operation: 'SEARCH', error: "Empty search pattern not allowed"}
+]
+
+#### Multiple operations with errors
+
+- validate([
+    {type: 'WRITE', line: 1, content: 'test'},
+    {type: 'RUN', line: 2, content: ''},
+    {type: 'SEARCH', line: 3, file: 'app.js', pattern: '', replacement: 'x'}
+  ])
+→ [
+  {line: 1, operation: 'WRITE', error: "Missing required attribute 'file'"},
+  {line: 2, operation: 'RUN', error: "Empty content not allowed for RUN operation"},
+  {line: 3, operation: 'SEARCH', error: "Empty search pattern not allowed"}
+]
+
+### malformed_ast
+
+#### Missing required AST fields
+
+- validate([{type: 'WRITE', line: 1, file: 'test.txt'}])
+→ []  // content field missing but validator handles gracefully
+
+- validate([{type: 'SEARCH', line: 2, file: 'app.js', pattern: 'find'}])
+→ []  // replacement field missing but validator handles gracefully
+
+- validate([{type: 'TASKS', line: 3}])
+→ []  // operations field missing but validator handles gracefully
+
+### empty_ast
+
+#### Empty AST is valid
+
+- validate([])
+→ []
+
+### complex_scenarios
+
+#### Nested TASKS with multiple errors
+
+- validate([{type: 'TASKS', line: 1, operations: [
+    {type: 'WRITE', line: 2, append: 'wrong', content: ''},
+    {type: 'RUN', line: 3, content: ''},
+    {type: 'SEARCH', line: 4, count: '-1', pattern: '', to: '', replacement: ''},
+    {type: 'TASKS', line: 5, operations: []}
+  ]}])
+→ [
+  {line: 2, operation: 'WRITE', error: "Missing required attribute 'file'"},
+  {line: 2, operation: 'WRITE', error: "Invalid value for 'append': must be 'true' or 'false'", field: 'append'},
+  {line: 3, operation: 'RUN', error: "Empty content not allowed for RUN operation"},
+  {line: 4, operation: 'SEARCH', error: "Missing required attribute 'file'"},
+  {line: 4, operation: 'SEARCH', error: "Invalid value for 'count': must be positive integer or 'all'", field: 'count'},
+  {line: 4, operation: 'SEARCH', error: "Empty search pattern not allowed"},
+  {line: 4, operation: 'SEARCH', error: "Empty TO pattern not allowed"},
+  {line: 5, operation: 'TASKS', error: "TASKS cannot contain other TASKS operations"}
+]
 <<<END>>>
-
-<<<EXPLANATION>>>
-Now modify the section that handles lines starting with the delimiter but not matching the full regex. We need to check if it's a valid marker with trailing content before deciding to treat it as literal content.
-
-<<<FILE>>>
-csl-parser/main/core/src/parser.ts
-
-<<<SEARCH>>>
-      } else {
-        // Line starts with delimiter but doesn't match pattern
-        console.log(`  Marker regex failed to match`);
-        console.log(`  Current state: ${state}`);
-        if (!state || state === 'TASKS') {
-          // At top level - this is an error
-          console.log(`  Throwing malformed marker error`);
-          throw new Error(`Line ${lineNum}: Malformed marker`);
-        }
-        // In content block - treat as literal content
-        console.log(`  In content block - treating as literal content`);
-      }
-<<<REPLACE>>>
-      } else {
-        // Line starts with delimiter but doesn't match pattern
-        console.log(`  Marker regex failed to match`);
-        console.log(`  Current state: ${state}`);
-        
-        // Check if this looks like a marker with trailing content
-        // Build a regex that matches up to and including the end delimiter
-        const partialMarkerRegex = new RegExp(`^${startEscaped}(\\w+)(\\s+(.*))?${endEscaped}`);
-        const partialMatch = line.match(partialMarkerRegex);
-        
-        if (partialMatch) {
-          const opName = partialMatch[1];
-          console.log(`  Found partial marker: ${opName}`);
-          
-          // Check if this would be a valid state-transition marker for current state
-          const wouldBeValidMarker = isValidOperationForState(opName, state);
-          console.log(`  Would be valid marker: ${wouldBeValidMarker}`);
-          
-          // If it would be a valid marker but has trailing content, that's an error
-          if (wouldBeValidMarker && line.length > partialMatch[0].length) {
-            console.log(`  Has trailing content after valid marker`);
-            throw new Error(`Line ${lineNum}: Content not allowed on marker line`);
-          }
-        }
-        
-        if (!state || state === 'TASKS') {
-          // At top level - this is an error
-          console.log(`  Throwing malformed marker error`);
-          throw new Error(`Line ${lineNum}: Malformed marker`);
-        }
-        // In content block - treat as literal content
-        console.log(`  In content block - treating as literal content`);
-      }
-<<<END>>>
-
-The key changes:
-1. Added `isValidOperationForState` helper function that correctly identifies which operations are valid for each state
-2. When a line starts with the delimiter but doesn't match the full regex, we now:
-   - Check if it matches a partial marker pattern (marker without line end requirement)
-   - Check if that operation would be valid for the current state
-   - If both are true AND there's content after the marker, throw "Content not allowed on marker line"
-
-This should fix the test case where `<---END---> extra text` in a WRITE block should throw "Content not allowed on marker line" instead of being treated as literal content.
