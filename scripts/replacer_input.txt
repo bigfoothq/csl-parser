@@ -1,39 +1,131 @@
-=== PROCESSED: 2025-06-23 13:34:22 ===
+=== PROCESSED: 2025-06-23 13:43:26 ===
 SUCCESS Block 1: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/src/parser.ts
+SUCCESS Block 2: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/src/parser.ts
+ERROR Block 3: No match found in /Users/stuart/repos/csl-parser/csl-parser/main/core/src/parser.ts
 ===
 
-Looking at the test output, I can see that the SEARCH operation is not properly collecting content. The parser is creating empty strings for `pattern` and `replacement` instead of collecting the content between markers.
+Perfect! Now I can see the issue clearly from the debug output. When we're ending a TASKS block:
 
-The issue is in the parser implementation - it's not properly handling content collection for SEARCH operations. Let me fix this:
+```
+Line 5: "<---END--->"
+  State: TASKS, insideTasks: true, currentOp: null
+  Processing END marker:
+    state: TASKS
+    currentOp: null  <-- This is the problem!
+    insideTasks: true
+    tasksOp: TASKS
+```
+
+The issue is that when we finish an operation inside TASKS, we set `currentOp = null`. But when we encounter the END marker that should close the TASKS block, we need `currentOp` to point to the TASKS operation itself.
+
+Let me trace through what should happen:
+1. `<---TASKS--->` creates a TASKS operation and sets `currentOp = tasksOp`
+2. When we start a nested operation (like WRITE), we should keep `tasksOp` separate
+3. When the nested operation ends, we go back to TASKS state but `currentOp` should be `tasksOp`
+4. When the final END comes, it should close the TASKS operation
+
+The problem is we're treating TASKS differently from other operations. Let's fix this:
 
 <<<EXPLANATION>>>
-The parser needs to properly collect content for SEARCH operations based on the current state. When in SEARCH_PATTERN state, content should go to searchPattern buffer. When in SEARCH_TO state, content should go to searchTo buffer. When in SEARCH_REPLACEMENT state, content should go to searchReplacement buffer.
-<<<END>>>
+Fix the TASKS handling by properly managing currentOp when state is TASKS. When we're in TASKS state, currentOp should point to the TASKS operation itself.
 
 <<<FILE>>>
 csl-parser/main/core/src/parser.ts
+
 <<<SEARCH>>>
-    else {
-      // Content line
-      if (state && currentOp) {
-        contentBuffer.push(line);
-      }
-    }
-<<<REPLACE>>>
-    else {
-      // Content line
-      if (state && currentOp) {
-        if (state === 'SEARCH_PATTERN') {
-          searchPattern.push(line);
-        } else if (state === 'SEARCH_TO') {
-          searchTo.push(line);
-        } else if (state === 'SEARCH_REPLACEMENT') {
-          searchReplacement.push(line);
-        } else {
-          contentBuffer.push(line);
+        } else if (state === 'TASKS') {
+          // Ending TASKS block
+          operations.push(tasksOp!);
+          tasksOp = null;
+          insideTasks = false;
+          state = null;
+          currentOp = null;
+          contentBuffer = [];
+          searchPattern = [];
+          searchTo = [];
+          searchReplacement = [];
+          lineNum++;
+          continue;
         }
-      }
-    }
+<<<REPLACE>>>
+        } else if (state === 'TASKS' && currentOp === tasksOp) {
+          // Ending TASKS block
+          console.log(`    Ending TASKS block`);
+          operations.push(tasksOp!);
+          tasksOp = null;
+          insideTasks = false;
+          state = null;
+          currentOp = null;
+          contentBuffer = [];
+          searchPattern = [];
+          searchTo = [];
+          searchReplacement = [];
+          lineNum++;
+          continue;
+        }
 <<<END>>>
 
-Now let's run the test again to see if this fixes the issue.
+<<<EXPLANATION>>>
+When we finish a nested operation inside TASKS, we need to restore currentOp to point to the TASKS operation.
+
+<<<FILE>>>
+csl-parser/main/core/src/parser.ts
+
+<<<SEARCH>>>
+        // If inside TASKS, add to operations array
+        if (insideTasks && state !== 'TASKS' && tasksOp) {
+          // Ending a nested operation inside TASKS
+          console.log(`    Adding ${currentOp.type} to TASKS operations`);
+          tasksOp.operations!.push(currentOp);
+          state = 'TASKS';
+          console.log(`    State changed to: ${state}`);
+        } else if (!insideTasks) {
+          // Ending a top-level operation
+          console.log(`    Adding ${currentOp.type} to top-level operations`);
+          operations.push(currentOp);
+          state = null;
+          console.log(`    State changed to: ${state}`);
+        }
+        
+        currentOp = null;
+<<<REPLACE>>>
+        // If inside TASKS, add to operations array
+        if (insideTasks && state !== 'TASKS' && tasksOp) {
+          // Ending a nested operation inside TASKS
+          console.log(`    Adding ${currentOp.type} to TASKS operations`);
+          tasksOp.operations!.push(currentOp);
+          state = 'TASKS';
+          currentOp = tasksOp; // Restore currentOp to TASKS
+          console.log(`    State changed to: ${state}, currentOp restored to TASKS`);
+        } else if (!insideTasks) {
+          // Ending a top-level operation
+          console.log(`    Adding ${currentOp.type} to top-level operations`);
+          operations.push(currentOp);
+          state = null;
+          currentOp = null;
+          console.log(`    State changed to: ${state}`);
+        }
+<<<END>>>
+
+<<<EXPLANATION>>>
+Also need to update the debug output at the end to show the new currentOp state.
+
+<<<FILE>>>
+csl-parser/main/core/src/parser.ts
+
+<<<SEARCH>>>
+        currentOp = null;
+        contentBuffer = [];
+        searchPattern = [];
+        searchTo = [];
+        searchReplacement = [];
+        console.log(`    After END: state=${state}, currentOp=${currentOp}`);
+<<<REPLACE>>>
+        contentBuffer = [];
+        searchPattern = [];
+        searchTo = [];
+        searchReplacement = [];
+        console.log(`    After END: state=${state}, currentOp=${currentOp ? currentOp.type : 'null'}`);
+<<<END>>>
+
+Now let's run the tests again to see if this fixes the issue.
