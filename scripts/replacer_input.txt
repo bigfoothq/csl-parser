@@ -1,68 +1,108 @@
-=== PROCESSED: 2025-06-21 10:17:56 ===
-ERROR Block 1: No match found in /Users/stuart/repos/clada/clada/main/components/edit/main/core/test-unit/test/execute.test.js
+=== PROCESSED: 2025-06-22 21:24:10 ===
+SUCCESS Block 1: Updated /Users/stuart/repos/csl-parser/csl_reqs.md
+SUCCESS Block 2: Updated /Users/stuart/repos/csl-parser/csl_reqs.md
+SUCCESS Block 3: Updated /Users/stuart/repos/csl-parser/csl_reqs.md
+SUCCESS Block 4: Updated /Users/stuart/repos/csl-parser/csl_reqs.md
+SUCCESS Block 5: Updated /Users/stuart/repos/csl-parser/csl_reqs.md
 ===
 
-The edit failed because the lazy range matching test already exists in the file from the first successful edit. Let me search for the correct insertion point:
-
-Let me examine the file directly to understand its current state and find the right insertion point:
+=== PROCESSED: 2025-06-22 21:23:39 ===
+ERROR Block 1: File not found: csl_reqs.md
+ERROR Block 2: File not found: csl_reqs.md
+ERROR Block 3: File not found: csl_reqs.md
+ERROR Block 4: File not found: csl_reqs.md
+ERROR Block 5: File not found: csl_reqs.md
+===
 
 <<<EXPLANATION>>>
-
-Add the missing symlink rejection test case after the subdirectory test and before the path escape test
+Add state-transition marker definitions to edge cases section
 
 <<<FILE>>>
-
-clada/main/components/edit/main/core/test-unit/test/execute.test.js
+csl_reqs.md
 
 <<<SEARCH>>>
-  it('handles path with subdirectory', () => {
-    mkdirSync(join(testDir, 'sub', 'dir'), { recursive: true });
-    writeFileSync(join(testDir, 'sub', 'dir', 'file.txt'), 'content');
-    
-    const result = executeEdit({
-      mode: 'exact',
-      path: 'sub/dir/file.txt',
-      search: 'content',
-      replace: 'new content',
-      count: 1
-    }, context);
-    
-    assert.deepEqual(result, { ok: true, value: undefined });
-    assert.equal(readFileSync(join(testDir, 'sub', 'dir', 'file.txt'), 'utf8'), 'new content');
-  });
-
-  it('prevents path escape attempts', () => {
+## Edge Cases
+- Lines starting with `<---` inside content blocks are treated as literal text unless they form valid state-transition markers
+- Partial markers (e.g., `<--` or `-->`) are valid content
 <<<REPLACE>>>
-  it('handles path with subdirectory', () => {
-    mkdirSync(join(testDir, 'sub', 'dir'), { recursive: true });
-    writeFileSync(join(testDir, 'sub', 'dir', 'file.txt'), 'content');
-    
-    const result = executeEdit({
-      mode: 'exact',
-      path: 'sub/dir/file.txt',
-      search: 'content',
-      replace: 'new content',
-      count: 1
-    }, context);
-    
-    assert.deepEqual(result, { ok: true, value: undefined });
-    assert.equal(readFileSync(join(testDir, 'sub', 'dir', 'file.txt'), 'utf8'), 'new content');
-  });
+## Edge Cases
+- Lines starting with `<---` inside content blocks are treated as literal text unless they form valid state-transition markers:
+  - WRITE/RUN content: only `<---END--->`
+  - SEARCH pattern content: `<---TO--->`, `<---REPLACE--->`, `<---END--->`
+  - SEARCH to content: only `<---REPLACE--->`
+  - SEARCH replace content: only `<---END--->`
+- Partial markers (e.g., `<--` or `-->`) are valid content
+<<<END>>>
 
-  it('rejects symlink operations', () => {
-    writeFileSync(join(testDir, 'target.txt'), 'original content');
-    symlinkSync(join(testDir, 'target.txt'), join(testDir, 'link.txt'));
-    
-    const result = executeEdit({
-      mode: 'exact',
-      path: 'link.txt',
-      search: 'x',
-      replace: 'y',
-      count: 1
-    }, context);
-    
-    assert.deepEqual(result, { ok: false, error: 'symlink_not_allowed' });
-  });
+<<<EXPLANATION>>>
+Define empty content precisely
 
-  it('prevents path escape attempts', () => {
+<<<FILE>>>
+csl_reqs.md
+
+<<<SEARCH>>>
+### Content Rules
+- Empty WRITE content: valid
+- Empty RUN content: invalid
+- Empty SEARCH pattern: invalid
+- Empty TO pattern: invalid
+- Empty REPLACE content: valid (deletion)
+<<<REPLACE>>>
+### Content Rules
+- Empty content = zero bytes between markers (no characters, not even whitespace)
+- Empty WRITE content: valid
+- Empty RUN content: invalid
+- Empty SEARCH pattern: invalid
+- Empty TO pattern: invalid
+- Empty REPLACE content: valid (deletion)
+<<<END>>>
+
+<<<EXPLANATION>>>
+Add attribute name character rules
+
+<<<FILE>>>
+csl_reqs.md
+
+<<<SEARCH>>>
+### Attributes
+- Format: `key="value"` or `key='value'`
+- Whitespace required between attributes
+<<<REPLACE>>>
+### Attributes
+- Format: `key="value"` or `key='value'`
+- Attribute names can contain any non-whitespace characters
+- Whitespace required between attributes
+<<<END>>>
+
+<<<EXPLANATION>>>
+Clarify escape sequence behavior
+
+<<<FILE>>>
+csl_reqs.md
+
+<<<SEARCH>>>
+- Escape sequences within values:
+  - `\"` → `"` (inside double quotes)
+  - `\'` → `'` (inside single quotes)  
+  - `\\` → `\`
+<<<REPLACE>>>
+- Escape sequences within values:
+  - `\"` → `"` (inside double quotes)
+  - `\'` → `'` (inside single quotes)  
+  - `\\` → `\`
+  - Other backslash sequences (e.g., `\n`, `\t`) are literal text
+<<<END>>>
+
+<<<EXPLANATION>>>
+Clarify multi-line RUN commands
+
+<<<FILE>>>
+csl_reqs.md
+
+<<<SEARCH>>>
+- One command per RUN block
+- Multi-line commands supported in RUN
+<<<REPLACE>>>
+- One command per RUN block (spanning multiple lines allowed)
+- Shell handles line continuations
 <<<END>>>
