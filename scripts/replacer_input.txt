@@ -1,383 +1,178 @@
-=== PROCESSED: 2025-06-22 22:10:32 ===
-SUCCESS Block 1: Overwrote /Users/stuart/repos/csl-parser/csl-parser/main/core/test-unit/cov/parser.cov.md
+=== PROCESSED: 2025-06-23 00:04:25 ===
+SUCCESS Block 1: Created /Users/stuart/repos/csl-parser/csl-parser/shared/doc/TYPES.md
+ERROR Block 2: No match found in /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_reqs.md
+SUCCESS Block 3: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_reqs.md
+ERROR Block 4: No match found in /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
+SUCCESS Block 5: Updated /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/csl_imp.md
 ===
 
 <<<EXPLANATION>>>
-Complete regeneration of parser.cov.md with all updates applied
+Define AST structure explicitly in TYPES.md as decided
 
 <<<FILE>>>
-csl-parser/main/core/test-unit/cov/parser.cov.md
+csl-parser/shared/doc/TYPES.md
+
 <<<OVERWRITE>>>
-# parser.cov.md
+20250123
 
-parse(text) → AST or throws Error
+# CSL Parser Types
 
-## Happy Path
+## AST Structure
 
-### Basic Operations
+```typescript
+type Operation = {
+  type: 'WRITE' | 'RUN' | 'SEARCH' | 'TASKS';
+  line: number;
+  
+  // Attributes - all optional, flattened to top level
+  file?: string;
+  append?: string;
+  dir?: string;
+  count?: string;
+  version?: string;
+  
+  // Content fields - presence depends on operation type
+  content?: string;      // WRITE, RUN
+  pattern?: string;      // SEARCH
+  to?: string;           // SEARCH (optional)
+  replacement?: string;  // SEARCH
+  
+  // TASKS only
+  operations?: Operation[];
+  
+  // Extension point - any additional attributes
+  [key: string]: any;
+}
 
-parse(
-<---WRITE file="test.txt"--->
-hello world
-<---END--->
-) → [{type: 'WRITE', file: 'test.txt', content: 'hello world\n', line: 1}]
+type AST = Operation[];
+```
 
-parse(
-<---RUN--->
-npm install
-<---END--->
-) → [{type: 'RUN', content: 'npm install\n', line: 1}]
+## Field Constraints by Operation Type
 
-parse(
-<---WRITE file="log.txt" append="true"--->
-new entry
-<---END--->
-) → [{type: 'WRITE', file: 'log.txt', append: 'true', content: 'new entry\n', line: 1}]
+### WRITE
+- Required: `type`, `line`, `file`, `content`
+- Optional: `append`
 
-### Search Operations
+### RUN  
+- Required: `type`, `line`, `content`
+- Optional: `dir`
 
-parse(
-<---SEARCH file="config.json"--->
-"debug": false
-<---REPLACE--->
-"debug": true
-<---END--->
-) → [{type: 'SEARCH', file: 'config.json', pattern: '"debug": false\n', replacement: '"debug": true\n', line: 1}]
-
-parse(
-<---SEARCH file="main.py"--->
-def old_func():
-    pass
-<---TO--->
-    return None
-<---REPLACE--->
-def new_func():
-    return 42
-<---END--->
-) → [{type: 'SEARCH', file: 'main.py', pattern: 'def old_func():\n    pass\n', to: '    return None\n', replacement: 'def new_func():\n    return 42\n', line: 1}]
-
-parse(
-<---SEARCH file="test.js" count="all"--->
-foo
-<---REPLACE--->
-bar
-<---END--->
-) → [{type: 'SEARCH', file: 'test.js', count: 'all', pattern: 'foo\n', replacement: 'bar\n', line: 1}]
+### SEARCH
+- Required: `type`, `line`, `file`, `pattern`, `replacement`
+- Optional: `count`, `to`
 
 ### TASKS
+- Required: `type`, `line`, `operations`
+- Optional: `version`
 
-parse(
-<---TASKS--->
-<---WRITE file="a.txt"--->
-content a
-<---END--->
-<---RUN--->
-echo done
-<---END--->
-<---END--->
-) → [{type: 'TASKS', operations: [{type: 'WRITE', file: 'a.txt', content: 'content a\n', line: 2}, {type: 'RUN', content: 'echo done\n', line: 5}], line: 1}]
+## Notes
 
-## Error Cases
+- Parser outputs may include invalid states (missing required fields) to enable better error messages
+- Additional attributes from CSL are preserved as top-level properties
+- All string values preserved exactly as parsed (no type coercion)
+- Line numbers are 1-indexed
+<<<END>>>
 
-### Missing Required Attributes
+<<<EXPLANATION>>>
+Remove line ending preservation requirements from spec
 
-parse(
-<---WRITE--->
-content
-<---END--->
-) → throws "Line 1: Missing required attribute: file"
+<<<FILE>>>
+csl-parser/main/core/doc/csl_reqs.md
 
-parse(
-<---SEARCH--->
-pattern
-<---REPLACE--->
-new
-<---END--->
-) → throws "Line 1: Missing required attribute: file"
+<<<SEARCH>>>
+### Line Ending Preservation
+- Content starts on the line after an operation marker
+- Content ends on the line before the END marker
+- Each line of content preserves its text exactly, without line endings
+- Line endings are reconstructed based on which lines had endings in the original
+- Parser must track line ending types (\n, \r\n, \r) to reconstruct exactly
+- Mixed line endings within content must be preserved byte-for-byte
+- Inline END markers are invalid - END must start at beginning of line
+<<<REPLACE>>>
+### Content Handling
+- Content starts on the line after an operation marker
+- Content ends on the line before the END marker
+- All line endings normalized to LF (\n) during parsing
+- Platform-specific line endings handled at execution time
+<<<END>>>
 
-### Empty Content Violations
+<<<EXPLANATION>>>
+Add execution layer note to clarify parser boundaries
 
-parse(
-<---RUN--->
-<---END--->
-) → throws "Line 2: Empty RUN content"
+<<<FILE>>>
+csl-parser/main/core/doc/csl_reqs.md
 
-parse(
-<---SEARCH file="test.js"--->
-<---REPLACE--->
-replacement
-<---END--->
-) → throws "Line 2: Empty SEARCH pattern"
-
-parse(
-<---SEARCH file="test.js"--->
-pattern
-<---TO--->
-<---REPLACE--->
-replacement
-<---END--->
-) → throws "Line 4: Empty TO pattern"
-
-### Invalid Operations/Markers
-
-parse(
-<---INVALID--->
-<---END--->
-) → throws "Line 1: Unknown operation: INVALID"
-
-parse(
-<--- WRITE file="test"--->
-content
-<---END--->
-) → throws "Line 1: Invalid marker format"
-
-### Structural Violations
-
-parse(
-<---WRITE file="test.txt"--->
-unclosed
-) → throws "Line 3: Unexpected end of input"
-
-parse(
-<---TASKS--->
-<---TASKS--->
-<---END--->
-<---END--->
-) → throws "Line 2: TASKS cannot be nested"
-
-### Duplicate Attributes
-
-parse(
-<---WRITE file="a.txt" file="b.txt"--->
-content
-<---END--->
-) → throws "Line 1: Duplicate attribute: file"
-
-### Invalid Attribute Values
-
-parse(
-<---SEARCH file="test.js" count="invalid"--->
-pattern
-<---REPLACE--->
-new
-<---END--->
-) → throws "Line 1: Invalid count value: invalid"
-
-parse(
-<---WRITE file="test.txt" append="yes"--->
-content
-<---END--->
-) → throws "Line 1: Invalid append value: yes"
-
-### Malformed Attribute Syntax
-
-parse(
-<---WRITE file=unquoted--->
-content
-<---END--->
-) → throws "Line 1: Invalid marker format"
-
-parse(
-<---WRITE file="unterminated--->
-content
-<---END--->
-) → throws "Line 1: Invalid marker format"
-
-parse(
-<---WRITE file='mismatched"--->
-content
-<---END--->
-) → throws "Line 1: Invalid marker format"
+<<<SEARCH>>>
+## Edge Cases
+- All markers (`<---OPERATION...>`, `<---TO--->`, `<---REPLACE--->`, `<---END--->`) must be complete lines with no other content
+<<<REPLACE>>>
+## Execution Considerations (Not Parser Responsibility)
+- Platform-specific line endings applied during file operations
+- SEARCH operations normalize both file and pattern for matching
+- Binary file detection prevents unwanted normalization
 
 ## Edge Cases
+- All markers (`<---OPERATION...>`, `<---TO--->`, `<---REPLACE--->`, `<---END--->`) must be complete lines with no other content
+<<<END>>>
 
-### Attribute Escaping
+<<<EXPLANATION>>>
+Update implementation guide to remove line ending tracking
 
-parse(
-<---WRITE file="test\"quote.txt"--->
-content
-<---END--->
-) → [{type: 'WRITE', file: 'test"quote.txt', content: 'content\n', line: 1}]
+<<<FILE>>>
+csl-parser/main/core/doc/csl_imp.md
 
-parse(
-<---WRITE file='test\'quote.txt'--->
-content
-<---END--->
-) → [{type: 'WRITE', file: "test'quote.txt", content: 'content\n', line: 1}]
+<<<SEARCH>>>
+## Content Preservation
+- Maintain exact byte sequences
+- No line ending normalization
+- No whitespace trimming
+- Content blocks include all lines between markers
+- Line endings are not stored with content lines
+- Parser must track which lines had endings and their type
+- Reconstruction joins lines with appropriate endings
+- Final line ending presence determined by blank line before END marker
+<<<REPLACE>>>
+## Content Handling
+- Join content lines with LF (\n)
+- No whitespace trimming
+- Empty content = zero bytes between markers
+- Trailing newline included if blank line before END marker
+<<<END>>>
 
-parse(
-<---WRITE file="path\\with\\backslash"--->
-content
-<---END--->
-) → [{type: 'WRITE', file: 'path\\with\\backslash', content: 'content\n', line: 1}]
+<<<EXPLANATION>>>
+Add AST construction details with new structure
 
-### CSL Syntax in Content
+<<<FILE>>>
+csl-parser/main/core/doc/csl_imp.md
 
-parse(
-<---WRITE file="nested.csl"--->
-<---WRITE file="inner"--->
-This is literal text
-<---END--->
-<---END--->
-) → [{type: 'WRITE', file: 'nested.csl', content: '<---WRITE file="inner"--->\nThis is literal text\n<---END--->\n', line: 1}]
+<<<SEARCH>>>
+## AST Construction
+- Build operation objects incrementally
+- Attach line numbers for error context
+- Validate required fields before returning
+- Type remains as string (no coercion)
+- Return array of operation objects
+<<<REPLACE>>>
+## AST Construction
+- Build operation objects incrementally
+- Attach line numbers for error context
+- Validate required fields before returning
+- Type remains as string (no coercion)
+- Flatten all attributes to top level of operation object
+- Preserve unknown attributes as-is
+- Return array of operation objects per TYPES.md schema
+<<<END>>>
 
-### Empty Values
+<<<EXPLANATION>>>
+Remove obsolete Q&A about escape sequences
 
-parse(
-<---WRITE file=""--->
-content
-<---END--->
-) → [{type: 'WRITE', file: '', content: 'content\n', line: 1}]
+<<<FILE>>>
+csl-parser/main/core/doc/csl_reqs.md
 
-parse(
-<---SEARCH file="test.js"--->
-pattern
-<---REPLACE--->
-<---END--->
-) → [{type: 'SEARCH', file: 'test.js', pattern: 'pattern\n', replacement: '', line: 1}]
+<<<SEARCH>>>
+## Escape Sequences
+**Q**: What happens with `\n`, `\t`, or `\x` where x is not `"`, `'`, or `\`?
 
-### Multiple Operations
-
-parse(
-<---WRITE file="a.txt"--->
-first
-<---END--->
-<---WRITE file="b.txt"--->
-second
-<---END--->
-) → [{type: 'WRITE', file: 'a.txt', content: 'first\n', line: 1}, {type: 'WRITE', file: 'b.txt', content: 'second\n', line: 4}]
-
-### Whitespace Between Attributes
-
-parse(
-<---WRITE   file="a.txt"     append="true"--->
-content
-<---END--->
-) → [{type: 'WRITE', file: 'a.txt', append: 'true', content: 'content\n', line: 1}]
-
-### Attribute Values with Equals
-
-parse(
-<---WRITE file="query=param&x=y"--->
-content
-<---END--->
-) → [{type: 'WRITE', file: 'query=param&x=y', content: 'content\n', line: 1}]
-
-### Mixed Line Endings
-
-parse('<---WRITE file="test.txt"--->\r\nline1\r\nline2\rline3\n<---END--->') → [{type: 'WRITE', file: 'test.txt', content: 'line1\r\nline2\rline3\n', line: 1}]
-
-### Partial Markers in Content
-
-parse(
-<---WRITE file="test.txt"--->
-This <-- is not --> a marker
-<--- also not a marker
---->
-<---END--->
-) → [{type: 'WRITE', file: 'test.txt', content: 'This <-- is not --> a marker\n<--- also not a marker\n--->\n', line: 1}]
-
-### Invalid Context Markers
-
-parse(
-<---TO--->
-content
-<---END--->
-) → throws "Line 1: TO marker not valid outside SEARCH operation"
-
-parse(
-<---WRITE file="test.txt"--->
-<---TO--->
-<---END--->
-) → throws "Line 2: TO not valid in WRITE operation"
-
-### END Marker Attributes
-
-parse(
-<---WRITE file="test.txt"--->
-content
-<---END attr="value"--->
-) → throws "Line 3: END marker cannot have attributes"
-
-### Empty TASKS
-
-parse(
-<---TASKS--->
-<---END--->
-) → [{type: 'TASKS', operations: [], line: 1}]
-
-### No Trailing Newline
-
-parse("<---WRITE file=\"test.txt\"--->\ncontent<---END--->") → [{type: 'WRITE', file: 'test.txt', content: 'content', line: 1}]
-
-### Marker Format Violations
-
-parse(
-<---WRITE file="test.txt" --->
-content
-<---END--->
-) → throws "Line 1: Invalid marker format"
-
-parse(
-<---WRITE file="test.txt"--- >
-content
-<---END--->
-) → throws "Line 1: Invalid marker format"
-
-### Line Number Accuracy
-
-parse(
-
-
-<---WRITE file="test.txt"--->
-content
-<---END--->
-) → [{type: 'WRITE', file: 'test.txt', content: 'content\n', line: 3}]
-
-parse(
-<---SEARCH file="test.js"--->
-pattern
-<---REPLACE--->
-<---END--->
-<---RUN--->
-<---END--->
-) → throws "Line 6: Empty RUN content"
-
-### Mixed Content and Operations
-
-parse(
-random text here
-
-<---WRITE file="test.txt"--->
-content
-<---END--->
-
-more random text
-) → [{type: 'WRITE', file: 'test.txt', content: 'content\n', line: 3}]
-
-parse(
-<---TASKS--->
-some text before operations
-<---WRITE file="a.txt"--->
-content
-<---END--->
-text between operations
-<---RUN--->
-echo hi
-<---END--->
-text after operations
-<---END--->
-) → [{type: 'TASKS', operations: [{type: 'WRITE', file: 'a.txt', content: 'content\n', line: 3}, {type: 'RUN', content: 'echo hi\n', line: 7}], line: 1}]
-
-parse(
-text before
-<---WRITE file="a.txt"--->
-first
-<---END--->
-text between
-<---WRITE file="b.txt"--->
-second
-<---END--->
-text after
-) → [{type: 'WRITE', file: 'a.txt', content: 'first\n', line: 2}, {type: 'WRITE', file: 'b.txt', content: 'second\n', line: 6}]
+**A**: Literal text. `\n` = `\n` (two characters), not newline.
+<<<REPLACE>>>
 <<<END>>>

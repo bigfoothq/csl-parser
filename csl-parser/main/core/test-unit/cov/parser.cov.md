@@ -1,3 +1,5 @@
+20250122
+
 # parser.cov.md
 
 parse(text) → AST or throws Error
@@ -199,7 +201,7 @@ parse(
 <---WRITE file="path\\with\\backslash"--->
 content
 <---END--->
-) → [{type: 'WRITE', file: 'path\\with\\backslash', content: 'content', line: 1}]
+) → [{type: 'WRITE', file: 'path\with\backslash', content: 'content', line: 1}]
 
 ### CSL Syntax in Content
 
@@ -253,9 +255,28 @@ content
 <---END--->
 ) → [{type: 'WRITE', file: 'query=param&x=y', content: 'content', line: 1}]
 
-### Mixed Line Endings
+### Line Ending Preservation
 
-parse('<---WRITE file="test.txt"--->\r\nline1\r\nline2\rline3\n<---END--->') → [{type: 'WRITE', file: 'test.txt', content: 'line1\r\nline2\rline3', line: 1}]
+parse(
+<---WRITE file="test.txt"--->
+hello world
+<---END--->
+) → [{type: 'WRITE', file: 'test.txt', content: 'hello world', line: 1}]
+
+parse(
+<---WRITE file="test.txt"--->
+hello world
+
+<---END--->
+) → [{type: 'WRITE', file: 'test.txt', content: 'hello world\n', line: 1}]
+
+parse(
+<---WRITE file="test.txt"--->
+line1
+line2
+line3
+<---END--->
+) → [{type: 'WRITE', file: 'test.txt', content: 'line1\nline2\nline3', line: 1}]
 ### Partial Markers in Content
 
 parse(
@@ -265,6 +286,24 @@ This <-- is not --> a marker
 --->
 <---END--->
 ) → [{type: 'WRITE', file: 'test.txt', content: 'This <-- is not --> a marker\n<--- also not a marker\n--->', line: 1}]
+
+parse(
+<---WRITE file="test.txt"--->
+prefix <---END--->
+<---END--->
+) → throws "Line 2: Content on marker line"
+
+parse(
+<---WRITE file="test.txt"--->
+<---END---> suffix
+<---END--->
+) → throws "Line 2: Content on marker line"
+
+parse(
+<---WRITE file="test.txt"--->
+<---WRITE<---END--->
+<---END--->
+) → throws "Line 2: Content on marker line"
 
 ### Invalid Context Markers
 
@@ -279,6 +318,28 @@ parse(
 <---TO--->
 <---END--->
 ) → throws "Line 2: TO not valid in WRITE operation"
+
+parse(
+<---SEARCH file="test.js"--->
+pattern
+<---TO--->
+middle
+<---TO--->
+end
+<---REPLACE--->
+new
+<---END--->
+) → throws "Line 5: TO marker already seen"
+
+parse(
+<---SEARCH file="test.js"--->
+pattern
+<---REPLACE--->
+new
+<---TO--->
+invalid
+<---END--->
+) → throws "Line 5: TO not valid after REPLACE"
 
 ### END Marker Attributes
 
@@ -297,7 +358,10 @@ parse(
 
 ### No Trailing Newline
 
-parse("<---WRITE file=\"test.txt\"--->\ncontent<---END--->") → throws "Line 2: Invalid marker format"
+parse(
+<---WRITE file=\"test.txt\"--->
+content<---END--->
+) → throws "Line 2: Content on marker line"
 
 ### Marker Format Violations
 
@@ -384,3 +448,68 @@ parse(
 hello world
 <---END--->
 ) → [{type: 'WRITE', file: 'test.txt', content: 'hello world', line: 1}]
+
+parse(
+<---WRITE file="test.txt"--->
+content<---END--->
+) → throws "Line 2: Invalid marker format"
+
+
+### Unusual Attribute Names
+
+parse(
+<---WRITE @file="test.txt"--->
+content
+<---END--->
+) → [{type: 'WRITE', '@file': 'test.txt', content: 'content', line: 1}]
+
+parse(
+<---WRITE 123="test.txt"--->
+content
+<---END--->
+) → [{type: 'WRITE', '123': 'test.txt', content: 'content', line: 1}]
+
+parse(
+<---WRITE file-name="test.txt"--->
+content
+<---END--->
+) → [{type: 'WRITE', 'file-name': 'test.txt', content: 'content', line: 1}]
+
+### State Violation Tests
+
+parse(
+<---REPLACE--->
+replacement text
+<---END--->
+) → throws "Line 1: REPLACE marker not valid outside SEARCH operation"
+
+parse(
+<---WRITE file="test.txt"--->
+content
+<---REPLACE--->
+invalid
+<---END--->
+) → throws "Line 3: REPLACE not valid in WRITE operation"
+
+parse(
+<---SEARCH file="test.js"--->
+<---REPLACE--->
+replacement
+<---END--->
+) → throws "Line 2: Empty SEARCH pattern"
+
+### Attribute Whitespace Normalization
+
+parse(
+<---WRITE   file="a.txt"     append="true"--->
+content
+<---END--->
+) → [{type: 'WRITE', file: 'a.txt', append: 'true', content: 'content', line: 1}]
+
+parse(
+<---SEARCH file="test.js"    count="all"--->
+pattern
+<---REPLACE--->
+replacement
+<---END--->
+) → [{type: 'SEARCH', file: 'test.js', count: 'all', pattern: 'pattern', replacement: 'replacement', line: 1}]

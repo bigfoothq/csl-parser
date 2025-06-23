@@ -1,3 +1,5 @@
+20250122
+
 # CSL (Clada Syntax Language) Specification
 
 ## Syntax
@@ -127,6 +129,9 @@ operations...
 - Duplicate attributes not allowed
 - No content allowed on same line as markers
 - Lines starting with `<---` must form valid markers or cause parse error (when not in content collection)
+- All markers must appear on their own lines with no content before or after
+- Markers cannot share lines with content or other markers
+- Text outside operations is allowed and ignored by the parser
 
 ### Content Rules
 - Empty content = zero bytes between markers (no characters, not even whitespace)
@@ -137,6 +142,12 @@ operations...
 - Empty REPLACE content: valid (deletion)
 - One command per RUN block (spanning multiple lines allowed)
 - Shell handles line continuations
+
+### Content Handling
+- Content starts on the line after an operation marker
+- Content ends on the line before the END marker
+- All line endings normalized to LF (\n) during parsing
+- Platform-specific line endings handled at execution time
 
 ### Search Operation Rules
 - TO marker only valid in SEARCH operations
@@ -159,7 +170,13 @@ operations...
 - Nested TASKS blocks
 - Line numbers in errors are 1-indexed
 
+## Execution Considerations (Not Parser Responsibility)
+- Platform-specific line endings applied during file operations
+- SEARCH operations normalize both file and pattern for matching
+- Binary file detection prevents unwanted normalization
+
 ## Edge Cases
+- All markers (`<---OPERATION...>`, `<---TO--->`, `<---REPLACE--->`, `<---END--->`) must be complete lines with no other content
 - Lines starting with `<---` inside content blocks are treated as literal text unless they form valid state-transition markers:
   - WRITE/RUN content: only `<---END--->`
   - SEARCH pattern content: `<---TO--->`, `<---REPLACE--->`, `<---END--->`
@@ -199,10 +216,6 @@ Any other marker (like `<---WRITE file="test"--->`) is literal text.
 
 **A**: One command that spans multiple lines. Shell handles line continuations.
 
-## Escape Sequences
-**Q**: What happens with `\n`, `\t`, or `\x` where x is not `"`, `'`, or `\`?
-
-**A**: Literal text. `\n` = `\n` (two characters), not newline.
 
 ## Attribute Names
 **Q**: Could `===`, `123`, or `@#$` be valid attribute names?
@@ -225,4 +238,9 @@ Any other marker (like `<---WRITE file="test"--->`) is literal text.
 **Why it matters**: The implementation regex pattern accepts attributes on ALL markers including END, but zero examples show END with attributes. Developers need explicit guidance.  
 **Question**: Should END markers accept attributes or not?
 
-ANSWER - END markers should not accept attributes
+**Answer**: END markers cannot have attributes. `<---END--->` is the only valid form.
+
+## Execution Considerations (Not Parser Responsibility)
+- Platform-specific line endings applied during file operations
+- SEARCH operations normalize both file and pattern for matching
+- Binary file detection prevents unwanted normalization

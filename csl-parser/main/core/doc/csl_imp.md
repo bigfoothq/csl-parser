@@ -26,6 +26,8 @@
    - Preserve exact bytes including mixed line endings (\r\n, \n, \r)
    - Marker lines validated against current state
    - Invalid state transitions throw immediately
+   - Entire line must match marker pattern - no leading/trailing content
+   - Partial line matches are parse errors, not content
 
 ### State Management
 - Single state variable tracking current parse context
@@ -101,18 +103,20 @@ All errors include:
 - Update state and initialize appropriate buffers
 - Track TASKS depth for nesting validation
 
-## Content Preservation
-- Maintain exact byte sequences
-- No line ending normalization
+## Content Handling
+- Join content lines with LF (\n)
 - No whitespace trimming
-- Content blocks include all lines between markers
+- Empty content = zero bytes between markers
+- Trailing newline included if blank line before END marker
 
 ## AST Construction
 - Build operation objects incrementally
 - Attach line numbers for error context
 - Validate required fields before returning
 - Type remains as string (no coercion)
-- Return array of operation objects
+- Flatten all attributes to top level of operation object
+- Preserve unknown attributes as-is
+- Return array of operation objects per TYPES.md schema
 
 ## Post-Parse Validation
 - Separate pass over AST
