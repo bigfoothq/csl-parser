@@ -1,408 +1,44 @@
-=== PROCESSED: 2025-06-23 17:19:30 ===
-SUCCESS Block 1: Updated /Users/stuart/repos/csl-parser/main/core/src/parser.ts
-SUCCESS Block 2: Overwrote /Users/stuart/repos/csl-parser/main/core/src/parser.ts
+=== PROCESSED: 2025-06-23 18:57:27 ===
+SUCCESS Block 1: Overwrote /Users/stuart/repos/csl-parser/csl-parser/package.json
 ===
 
-I see the issues. Let me fix them:
+This `ENOENT` error is a classic `npm` issue when using Git dependencies.
 
-1. The `Operation` type needs to be exported from `parser.ts`
-2. There are still debug statements in the test files that need to be removed
+### Analysis of the Error
 
-Let me make these corrections:
+1.  **What `npm` is doing:** When you run `npm install`, it sees the `git+https...` dependency for `csl-parser`. It successfully clones the repository into a temporary cache directory (`.../git-cloneQSFBhv`).
+2.  **What `npm` expects:** After cloning, `npm`'s next step is to read the `package.json` file from the *root* of that cloned repository. This file is the package manifest; it tells `npm` the package's name, version, and—most importantly—its main entry point.
+3.  **Why it fails:** The error message `Could not read package.json: Error: ENOENT` means the file does not exist. Your `csl-parser` repository is missing a `package.json` file in its root directory. Without it, `npm` cannot treat the repository as a valid package.
 
-## 1. Export Operation type from parser.ts
+### Solution
 
-<<<EXPLANATION>>>
-Export the Operation interface so it can be imported by index.ts
-<<<FILE>>>
-main/core/src/parser.ts
-<<<SEARCH>>>
-export interface Operation {
-  type: 'WRITE' | 'RUN' | 'SEARCH' | 'TASKS';
-  line: number;
-  [key: string]: any; // For attributes and content
-}
+The solution is to add a `package.json` file to the root of the `csl-parser` project and commit it. This file will define the necessary metadata for `npm`.
 
-export interface ParseOptions {
-  startDelimiter?: string;
-  endDelimiter?: string;
-}
-
-export function parse(text: string, options?: ParseOptions): Operation[] {
-<<<REPLACE>>>
-export interface Operation {
-  type: 'WRITE' | 'RUN' | 'SEARCH' | 'TASKS';
-  line: number;
-  [key: string]: any; // For attributes and content
-}
-
-export interface ParseOptions {
-  startDelimiter?: string;
-  endDelimiter?: string;
-}
-
-export function parse(text: string, options?: ParseOptions): Operation[] {
-<<<END>>>
-
-## 2. Look for debug statements in test files
-
-Let me check the parser.test.ts file for debug statements:Let me check the actual file location:The debug output you're seeing is coming from the parser.ts file itself, not the test files. It seems my previous edits didn't fully remove all the debug statements. Let me search for any remaining console.log statements:I see the issue - the debug statements are still in the uploaded parser.ts file. Let me create a clean version of parser.ts without any debug statements:
+***
 
 <<<EXPLANATION>>>
-Remove ALL remaining console.log debug statements from parser.ts
+
+To fix the `npm install` error, you must add a `package.json` file to the root of the `csl-parser` repository. This file defines the project as a valid `npm` package, specifying its name, version, type, and main entry point. The `main` field points to the public API file (`index.js`), which exports the `parse` function.
+
 <<<FILE>>>
-main/core/src/parser.ts
+
+csl-parser/package.json
+
 <<<OVERWRITE>>>
-export interface Operation {
-  type: 'WRITE' | 'RUN' | 'SEARCH' | 'TASKS';
-  line: number;
-  [key: string]: any; // For attributes and content
-}
-
-export interface ParseOptions {
-  startDelimiter?: string;
-  endDelimiter?: string;
-}
-
-export function parse(text: string, options?: ParseOptions): Operation[] {
-  const startDelim = options?.startDelimiter || '<---';
-  const endDelim = options?.endDelimiter || '--->';
-  
-  // Escape special regex characters
-  const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const startEscaped = escapeRegex(startDelim);
-  const endEscaped = escapeRegex(endDelim);
-  
-  // Build regex for markers: ^<---(\w+)(\s+(.*))?--->$
-  const markerRegex = new RegExp(`^${startEscaped}(\\w+)(\\s+(.*))?${endEscaped}$`);
-  
-  // Helper to check if an operation is valid for current state
-  const isValidOperationForState = (opName: string, currentState: string | null): boolean => {
-    if (!currentState) {
-      // At top level - only operation starters are valid
-      return ['WRITE', 'RUN', 'SEARCH', 'TASKS'].includes(opName);
-    } else if (currentState === 'TASKS') {
-      // In TASKS - operation starters and END are valid
-      return ['WRITE', 'RUN', 'SEARCH', 'END'].includes(opName);
-    } else if (currentState === 'WRITE' || currentState === 'RUN') {
-      return opName === 'END';
-    } else if (currentState === 'SEARCH_PATTERN') {
-      return ['TO', 'REPLACE', 'END'].includes(opName);
-    } else if (currentState === 'SEARCH_TO') {
-      return opName === 'REPLACE';
-    } else if (currentState === 'SEARCH_REPLACEMENT') {
-      return opName === 'END';
-    }
-    return false;
-  };
-  
-  const lines = text.split(/\r\n|\r|\n/);
-  const operations: Operation[] = [];
-  
-  let lineNum = 1;
-  let state: string | null = null;
-  let currentOp: Operation | null = null;
-  let contentBuffer: string[] = [];
-  let insideTasks = false;
-  let tasksOp: Operation | null = null;
-  
-  // For SEARCH operations
-  let searchPattern: string[] = [];
-  let searchTo: string[] = [];
-  let searchReplacement: string[] = [];
-  
-  for (const line of lines) {
-    // Check if this could be a marker
-    let isMarker = false;
-    let markerMatch: RegExpMatchArray | null = null;
-    
-    if (line.startsWith(startDelim)) {
-      markerMatch = line.match(markerRegex);
-      
-      if (markerMatch) {
-        const opName = markerMatch[1];
-        
-        // Determine if this is a valid state-transition marker for current state
-        if (!state || state === 'TASKS') {
-          // Not in content block - all valid markers accepted
-          isMarker = true;
-        } else if (state === 'WRITE' || state === 'RUN') {
-          // Only END is valid
-          isMarker = opName === 'END';
-        } else if (state === 'SEARCH_PATTERN') {
-          // TO, REPLACE, END are valid
-          isMarker = ['TO', 'REPLACE', 'END'].includes(opName);
-        } else if (state === 'SEARCH_TO') {
-          // Only REPLACE is valid
-          isMarker = opName === 'REPLACE';
-        } else if (state === 'SEARCH_REPLACEMENT') {
-          // Only END is valid
-          isMarker = opName === 'END';
-        }
-      } else {
-        // Line starts with delimiter but doesn't match pattern
-        // Check if this looks like a marker with trailing content
-        // Build a regex that matches up to and including the end delimiter
-        const partialMarkerRegex = new RegExp(`^${startEscaped}(\\w+)(\\s+(.*))?${endEscaped}`);
-        const partialMatch = line.match(partialMarkerRegex);
-        
-        if (partialMatch) {
-          const opName = partialMatch[1];
-          
-          // Check if this would be a valid state-transition marker for current state
-          const wouldBeValidMarker = isValidOperationForState(opName, state);
-          
-          // If it would be a valid marker but has trailing content, that's an error
-          if (wouldBeValidMarker && line.length > partialMatch[0].length) {
-            throw new Error(`Line ${lineNum}: Content not allowed on marker line`);
-          }
-        }
-        
-        if (!state || state === 'TASKS') {
-          // At top level - this is an error
-          throw new Error(`Line ${lineNum}: Malformed marker`);
-        }
-        // In content block - treat as literal content
-      }
-    }
-    
-    if (isMarker && markerMatch) {
-      const match = markerMatch;
-      
-      const opName = match[1];
-      const attrString = match[3] || '';
-      
-      // Handle END marker
-      if (opName === 'END') {
-        if (!state || !currentOp) {
-          throw new Error(`Line ${lineNum}: END marker without active operation`);
-        }
-        
-        // END markers cannot have attributes
-        if (attrString.trim()) {
-          throw new Error(`Line ${lineNum}: END marker cannot have attributes`);
-        }
-        
-        // Complete current operation
-        if (state === 'WRITE' || state === 'RUN') {
-          currentOp.content = contentBuffer.join('\n');
-        } else if (state === 'SEARCH_REPLACEMENT') {
-          currentOp.pattern = searchPattern.join('\n');
-          if (searchTo.length > 0) {
-            currentOp.to = searchTo.join('\n');
-          }
-          currentOp.replacement = searchReplacement.join('\n');
-        } else if (state === 'TASKS' && currentOp === tasksOp) {
-          // Ending TASKS block
-          operations.push(tasksOp!);
-          tasksOp = null;
-          insideTasks = false;
-          state = null;
-          currentOp = null;
-          contentBuffer = [];
-          searchPattern = [];
-          searchTo = [];
-          searchReplacement = [];
-          lineNum++;
-          continue;
-        }
-        
-        // If inside TASKS, add to operations array
-        if (insideTasks && state !== 'TASKS' && tasksOp) {
-          // Ending a nested operation inside TASKS
-          tasksOp.operations!.push(currentOp);
-          state = 'TASKS';
-          currentOp = tasksOp; // Restore currentOp to TASKS
-        } else if (!insideTasks) {
-          // Ending a top-level operation
-          operations.push(currentOp);
-          state = null;
-          currentOp = null;
-        }
-        contentBuffer = [];
-        searchPattern = [];
-        searchTo = [];
-        searchReplacement = [];
-      }
-      // Handle operation markers
-      else if (['WRITE', 'RUN', 'SEARCH', 'TASKS'].includes(opName)) {
-        // Check for TASKS nesting
-        if (opName === 'TASKS' && insideTasks) {
-          throw new Error(`Line ${lineNum}: TASKS cannot be nested`);
-        }
-        
-        // Check if operation is valid in current context
-        if (state !== null && state !== 'TASKS') {
-          throw new Error(`Line ${lineNum}: ${opName} marker not valid in ${state.replace(/_/g, ' ')} operation`);
-        }
-        
-        currentOp = { type: opName as Operation['type'], line: lineNum };
-        
-        // Parse attributes if present
-        if (attrString) {
-          const attrs = parseAttributes(attrString, lineNum);
-          Object.assign(currentOp, attrs);
-        }
-        
-        if (opName === 'TASKS') {
-          currentOp.operations = [];
-          tasksOp = currentOp;
-          insideTasks = true;
-          state = 'TASKS';
-        } else {
-          state = opName === 'SEARCH' ? 'SEARCH_PATTERN' : opName;
-        }
-      }
-      // Handle TO marker (only valid in SEARCH)
-      else if (opName === 'TO') {
-        if (state !== 'SEARCH_PATTERN') {
-          const stateStr = state === null ? 'null' : state.replace(/_/g, ' ');
-          throw new Error(`Line ${lineNum}: TO marker not valid in ${stateStr} operation`);
-        }
-        state = 'SEARCH_TO';
-      }
-      // Handle REPLACE marker (only valid in SEARCH)
-      else if (opName === 'REPLACE') {
-        if (state !== 'SEARCH_PATTERN' && state !== 'SEARCH_TO') {
-          const stateStr = state === null ? 'null' : state.replace(/_/g, ' ');
-          throw new Error(`Line ${lineNum}: REPLACE marker not valid in ${stateStr} operation`);
-        }
-        state = 'SEARCH_REPLACEMENT';
-      }
-      else {
-        throw new Error(`Line ${lineNum}: Unknown operation: ${opName}`);
-      }
-    } else {
-      // Not a marker - treat as content if in content state
-      if (state && currentOp && state !== 'TASKS') {
-        if (state === 'SEARCH_PATTERN') {
-          searchPattern.push(line);
-        } else if (state === 'SEARCH_TO') {
-          searchTo.push(line);
-        } else if (state === 'SEARCH_REPLACEMENT') {
-          searchReplacement.push(line);
-        } else {
-          contentBuffer.push(line);
-        }
-      } else if ((!state || state === 'TASKS') && line.startsWith(startDelim)) {
-        // At top level or in TASKS, and line starts with delimiter but wasn't recognized as valid marker
-        throw new Error(`Line ${lineNum}: Malformed marker`);
-      }
-    }
-    
-    lineNum++;
-  }
-  
-  // Check for unterminated operations
-  if (state && currentOp) {
-    // Get original operation name for error message
-    let opType = state;
-    if (state.startsWith('SEARCH')) {
-      opType = 'SEARCH';
-    } else if (state === 'TASKS' && tasksOp) {
-      throw new Error(`Line ${tasksOp.line}: Unterminated TASKS operation`);
-    }
-    throw new Error(`Line ${currentOp.line}: Unterminated ${opType} operation`);
-  }
-  
-  return operations;
-}
-
-function parseAttributes(attrString: string, lineNum: number): Record<string, string> {
-  const attrs: Record<string, string> = {};
-  let i = 0;
-  
-  while (i < attrString.length) {
-    // Skip whitespace
-    while (i < attrString.length && /\s/.test(attrString[i])) {
-      i++;
-    }
-    
-    if (i >= attrString.length) break;
-    
-    // Read attribute name
-    const nameStart = i;
-    while (i < attrString.length && !/[\s=]/.test(attrString[i])) {
-      i++;
-    }
-    
-    if (i === nameStart) {
-      throw new Error(`Line ${lineNum}: Invalid attribute syntax`);
-    }
-    
-    const name = attrString.slice(nameStart, i);
-    
-    // Skip whitespace
-    while (i < attrString.length && /\s/.test(attrString[i])) {
-      i++;
-    }
-    
-    // Expect equals sign
-    if (i >= attrString.length || attrString[i] !== '=') {
-      throw new Error(`Line ${lineNum}: Expected '=' after attribute name`);
-    }
-    i++; // skip =
-    
-    // Skip whitespace
-    while (i < attrString.length && /\s/.test(attrString[i])) {
-      i++;
-    }
-    
-    // Read quoted value
-    if (i >= attrString.length) {
-      throw new Error(`Line ${lineNum}: Missing attribute value`);
-    }
-    
-    const quote = attrString[i];
-    if (quote !== '"' && quote !== "'") {
-      throw new Error(`Line ${lineNum}: Unquoted attribute value`);
-    }
-    i++; // skip opening quote
-    
-    // Read value with escape handling
-    let value = '';
-    while (i < attrString.length) {
-      const char = attrString[i];
-      
-      if (char === '\\' && i + 1 < attrString.length) {
-        const nextChar = attrString[i + 1];
-        if (nextChar === quote || nextChar === '\\') {
-          value += nextChar;
-          i += 2;
-        } else {
-          // Other escapes are literal
-          value += char;
-          i++;
-        }
-      } else if (char === quote) {
-        i++; // skip closing quote
-        break;
-      } else {
-        value += char;
-        i++;
-      }
-    }
-    
-    // Check if we found closing quote
-    if (i > attrString.length || attrString[i - 1] !== quote) {
-      throw new Error(`Line ${lineNum}: Unterminated quoted value`);
-    }
-    
-    // Check for duplicate attributes
-    if (attrs.hasOwnProperty(name)) {
-      throw new Error(`Line ${lineNum}: Duplicate attribute: ${name}`);
-    }
-    
-    attrs[name] = value;
-  }
-  
-  return attrs;
+{
+  "name": "csl-parser",
+  "version": "1.0.0",
+  "description": "A single-pass state machine parser for CSL (Clada Syntax Language).",
+  "main": "main/core/src/index.js",
+  "type": "module",
+  "author": "",
+  "license": "ISC"
 }
 <<<END>>>
 
-Now the code should be clean:
-1. All debug console.log statements have been removed from parser.ts
-2. The Operation type is properly exported 
-3. The index.ts file correctly imports the types
+### Next Steps
 
-The tests should now run without any debug output cluttering the results.
+1.  Add the `package.json` file with the content above to the root of your `csl-parser` Git repository.
+2.  Commit and push this change to the branch you are tracking in `clada`.
+3.  Update the commit hash in `clada/package.json` to this new commit.
+4.  Run `npm install` again in the `clada` directory. It should now succeed.
