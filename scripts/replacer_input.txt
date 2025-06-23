@@ -1,293 +1,408 @@
-=== PROCESSED: 2025-06-23 15:41:28 ===
-SUCCESS Block 1: Created /Users/stuart/repos/csl-parser/csl-parser/main/core/doc/validator.cov.md
+=== PROCESSED: 2025-06-23 17:19:30 ===
+SUCCESS Block 1: Updated /Users/stuart/repos/csl-parser/main/core/src/parser.ts
+SUCCESS Block 2: Overwrote /Users/stuart/repos/csl-parser/main/core/src/parser.ts
 ===
 
-Looking at the validation rules and requirements, I'll generate a comprehensive `validator.cov.md` with 2-layer nesting as requested.
+I see the issues. Let me fix them:
 
+1. The `Operation` type needs to be exported from `parser.ts`
+2. There are still debug statements in the test files that need to be removed
+
+Let me make these corrections:
+
+## 1. Export Operation type from parser.ts
+
+<<<EXPLANATION>>>
+Export the Operation interface so it can be imported by index.ts
 <<<FILE>>>
-csl-parser/main/core/doc/validator.cov.md
-<<<OVERWRITE>>>
-20250123
-
-# CSL Validator Covenant
-
-validate(ast) → ValidationError[]
-
-## Test Implementation Notes
-
-- Validator returns array of ALL errors found (empty array if valid)
-- Error format: `{line: number, operation: string, error: string, field?: string}`
-- Line numbers come from AST operation objects
-- Tests should verify exact error messages from validation_rules.md
-
-## required_fields
-
-### write_operations
-
-#### WRITE missing file attribute
-
-- validate([{type: 'WRITE', line: 1, content: 'hello'}])
-→ [{line: 1, operation: 'WRITE', error: "Missing required attribute 'file'"}]
-
-- validate([{type: 'WRITE', line: 5, append: 'true', content: 'data'}])
-→ [{line: 5, operation: 'WRITE', error: "Missing required attribute 'file'"}]
-
-### search_operations
-
-#### SEARCH missing file attribute
-
-- validate([{type: 'SEARCH', line: 3, pattern: 'old', replacement: 'new'}])
-→ [{line: 3, operation: 'SEARCH', error: "Missing required attribute 'file'"}]
-
-- validate([{type: 'SEARCH', line: 10, count: '2', pattern: 'find', to: 'end', replacement: 'replace'}])
-→ [{line: 10, operation: 'SEARCH', error: "Missing required attribute 'file'"}]
-
-### valid_operations
-
-#### Operations with all required fields
-
-- validate([{type: 'WRITE', line: 1, file: 'test.txt', content: 'hello'}])
-→ []
-
-- validate([{type: 'RUN', line: 2, content: 'echo test'}])
-→ []
-
-- validate([{type: 'SEARCH', line: 3, file: 'app.js', pattern: 'old', replacement: 'new'}])
-→ []
-
-- validate([{type: 'TASKS', line: 4, operations: []}])
-→ []
-
-## attribute_validation
-
-### count_values
-
-#### Invalid count attribute values
-
-- validate([{type: 'SEARCH', line: 1, file: 'test.js', count: '0', pattern: 'x', replacement: 'y'}])
-→ [{line: 1, operation: 'SEARCH', error: "Invalid value for 'count': must be positive integer or 'all'", field: 'count'}]
-
-- validate([{type: 'SEARCH', line: 2, file: 'test.js', count: '-5', pattern: 'x', replacement: 'y'}])
-→ [{line: 2, operation: 'SEARCH', error: "Invalid value for 'count': must be positive integer or 'all'", field: 'count'}]
-
-- validate([{type: 'SEARCH', line: 3, file: 'test.js', count: 'invalid', pattern: 'x', replacement: 'y'}])
-→ [{line: 3, operation: 'SEARCH', error: "Invalid value for 'count': must be positive integer or 'all'", field: 'count'}]
-
-- validate([{type: 'SEARCH', line: 4, file: 'test.js', count: '3.14', pattern: 'x', replacement: 'y'}])
-→ [{line: 4, operation: 'SEARCH', error: "Invalid value for 'count': must be positive integer or 'all'", field: 'count'}]
-
-#### Valid count values
-
-- validate([{type: 'SEARCH', line: 1, file: 'test.js', count: '1', pattern: 'x', replacement: 'y'}])
-→ []
-
-- validate([{type: 'SEARCH', line: 2, file: 'test.js', count: '999', pattern: 'x', replacement: 'y'}])
-→ []
-
-- validate([{type: 'SEARCH', line: 3, file: 'test.js', count: 'all', pattern: 'x', replacement: 'y'}])
-→ []
-
-### append_values
-
-#### Invalid append attribute values
-
-- validate([{type: 'WRITE', line: 1, file: 'log.txt', append: 'yes', content: 'data'}])
-→ [{line: 1, operation: 'WRITE', error: "Invalid value for 'append': must be 'true' or 'false'", field: 'append'}]
-
-- validate([{type: 'WRITE', line: 2, file: 'log.txt', append: 'TRUE', content: 'data'}])
-→ [{line: 2, operation: 'WRITE', error: "Invalid value for 'append': must be 'true' or 'false'", field: 'append'}]
-
-- validate([{type: 'WRITE', line: 3, file: 'log.txt', append: '1', content: 'data'}])
-→ [{line: 3, operation: 'WRITE', error: "Invalid value for 'append': must be 'true' or 'false'", field: 'append'}]
-
-#### Valid append values
-
-- validate([{type: 'WRITE', line: 1, file: 'log.txt', append: 'true', content: 'data'}])
-→ []
-
-- validate([{type: 'WRITE', line: 2, file: 'log.txt', append: 'false', content: 'data'}])
-→ []
-
-### unknown_attributes
-
-#### Unknown attributes are ignored
-
-- validate([{type: 'WRITE', line: 1, file: 'test.txt', unknown: 'value', custom: '123', content: 'data'}])
-→ []
-
-- validate([{type: 'RUN', line: 2, extra: 'ignored', content: 'echo test'}])
-→ []
-
-## content_validation
-
-### run_empty_content
-
-#### Empty RUN content not allowed
-
-- validate([{type: 'RUN', line: 1, content: ''}])
-→ [{line: 1, operation: 'RUN', error: "Empty content not allowed for RUN operation"}]
-
-- validate([{type: 'RUN', line: 5, dir: '/tmp', content: ''}])
-→ [{line: 5, operation: 'RUN', error: "Empty content not allowed for RUN operation"}]
-
-#### Valid RUN content
-
-- validate([{type: 'RUN', line: 1, content: 'echo test'}])
-→ []
-
-- validate([{type: 'RUN', line: 2, content: ' '}])
-→ []
-
-### search_patterns
-
-#### Empty search patterns not allowed
-
-- validate([{type: 'SEARCH', line: 1, file: 'test.js', pattern: '', replacement: 'new'}])
-→ [{line: 1, operation: 'SEARCH', error: "Empty search pattern not allowed"}]
-
-- validate([{type: 'SEARCH', line: 3, file: 'app.py', pattern: '', to: 'end', replacement: 'code'}])
-→ [{line: 3, operation: 'SEARCH', error: "Empty search pattern not allowed"}]
-
-#### Empty TO patterns not allowed
-
-- validate([{type: 'SEARCH', line: 2, file: 'main.c', pattern: 'start', to: '', replacement: 'new'}])
-→ [{line: 2, operation: 'SEARCH', error: "Empty TO pattern not allowed"}]
-
-#### Valid search patterns
-
-- validate([{type: 'SEARCH', line: 1, file: 'test.js', pattern: 'find', replacement: 'replace'}])
-→ []
-
-- validate([{type: 'SEARCH', line: 2, file: 'test.js', pattern: ' ', replacement: 'space'}])
-→ []
-
-### valid_empty_content
-
-#### Empty WRITE content is valid
-
-- validate([{type: 'WRITE', line: 1, file: 'empty.txt', content: ''}])
-→ []
-
-#### Empty REPLACE content is valid (deletion)
-
-- validate([{type: 'SEARCH', line: 1, file: 'test.js', pattern: 'remove', replacement: ''}])
-→ []
-
-- validate([{type: 'SEARCH', line: 2, file: 'clean.py', pattern: 'start', to: 'end', replacement: ''}])
-→ []
-
-## nested_validation
-
-### tasks_in_tasks
-
-#### Direct TASKS nesting
-
-- validate([{type: 'TASKS', line: 1, operations: [
-    {type: 'TASKS', line: 2, operations: []}
-  ]}])
-→ [{line: 2, operation: 'TASKS', error: "TASKS cannot contain other TASKS operations"}]
-
-- validate([{type: 'TASKS', line: 5, version: '1.0', operations: [
-    {type: 'WRITE', line: 6, file: 'test.txt', content: 'hello'},
-    {type: 'TASKS', line: 7, operations: []},
-    {type: 'RUN', line: 8, content: 'echo done'}
-  ]}])
-→ [{line: 7, operation: 'TASKS', error: "TASKS cannot contain other TASKS operations"}]
-
-### deep_nesting
-
-#### Deeply nested TASKS detection
-
-- validate([{type: 'TASKS', line: 1, operations: [
-    {type: 'WRITE', line: 2, file: 'a.txt', content: 'a'},
-    {type: 'TASKS', line: 3, operations: [
-      {type: 'TASKS', line: 4, operations: []}
-    ]}
-  ]}])
-→ [
-  {line: 3, operation: 'TASKS', error: "TASKS cannot contain other TASKS operations"},
-  {line: 4, operation: 'TASKS', error: "TASKS cannot contain other TASKS operations"}
-]
-
-#### Valid TASKS without nesting
-
-- validate([{type: 'TASKS', line: 1, operations: [
-    {type: 'WRITE', line: 2, file: 'test.txt', content: 'data'},
-    {type: 'RUN', line: 3, content: 'npm test'},
-    {type: 'SEARCH', line: 4, file: 'app.js', pattern: 'old', replacement: 'new'}
-  ]}])
-→ []
-
-## edge_cases
-
-### multiple_errors
-
-#### Multiple errors on same operation
-
-- validate([{type: 'WRITE', line: 1, append: 'invalid', content: 'data'}])
-→ [
-  {line: 1, operation: 'WRITE', error: "Missing required attribute 'file'"},
-  {line: 1, operation: 'WRITE', error: "Invalid value for 'append': must be 'true' or 'false'", field: 'append'}
-]
-
-- validate([{type: 'SEARCH', line: 5, count: 'bad', pattern: '', replacement: 'new'}])
-→ [
-  {line: 5, operation: 'SEARCH', error: "Missing required attribute 'file'"},
-  {line: 5, operation: 'SEARCH', error: "Invalid value for 'count': must be positive integer or 'all'", field: 'count'},
-  {line: 5, operation: 'SEARCH', error: "Empty search pattern not allowed"}
-]
-
-#### Multiple operations with errors
-
-- validate([
-    {type: 'WRITE', line: 1, content: 'test'},
-    {type: 'RUN', line: 2, content: ''},
-    {type: 'SEARCH', line: 3, file: 'app.js', pattern: '', replacement: 'x'}
-  ])
-→ [
-  {line: 1, operation: 'WRITE', error: "Missing required attribute 'file'"},
-  {line: 2, operation: 'RUN', error: "Empty content not allowed for RUN operation"},
-  {line: 3, operation: 'SEARCH', error: "Empty search pattern not allowed"}
-]
-
-### malformed_ast
-
-#### Missing required AST fields
-
-- validate([{type: 'WRITE', line: 1, file: 'test.txt'}])
-→ []  // content field missing but validator handles gracefully
-
-- validate([{type: 'SEARCH', line: 2, file: 'app.js', pattern: 'find'}])
-→ []  // replacement field missing but validator handles gracefully
-
-- validate([{type: 'TASKS', line: 3}])
-→ []  // operations field missing but validator handles gracefully
-
-### empty_ast
-
-#### Empty AST is valid
-
-- validate([])
-→ []
-
-### complex_scenarios
-
-#### Nested TASKS with multiple errors
-
-- validate([{type: 'TASKS', line: 1, operations: [
-    {type: 'WRITE', line: 2, append: 'wrong', content: ''},
-    {type: 'RUN', line: 3, content: ''},
-    {type: 'SEARCH', line: 4, count: '-1', pattern: '', to: '', replacement: ''},
-    {type: 'TASKS', line: 5, operations: []}
-  ]}])
-→ [
-  {line: 2, operation: 'WRITE', error: "Missing required attribute 'file'"},
-  {line: 2, operation: 'WRITE', error: "Invalid value for 'append': must be 'true' or 'false'", field: 'append'},
-  {line: 3, operation: 'RUN', error: "Empty content not allowed for RUN operation"},
-  {line: 4, operation: 'SEARCH', error: "Missing required attribute 'file'"},
-  {line: 4, operation: 'SEARCH', error: "Invalid value for 'count': must be positive integer or 'all'", field: 'count'},
-  {line: 4, operation: 'SEARCH', error: "Empty search pattern not allowed"},
-  {line: 4, operation: 'SEARCH', error: "Empty TO pattern not allowed"},
-  {line: 5, operation: 'TASKS', error: "TASKS cannot contain other TASKS operations"}
-]
+main/core/src/parser.ts
+<<<SEARCH>>>
+export interface Operation {
+  type: 'WRITE' | 'RUN' | 'SEARCH' | 'TASKS';
+  line: number;
+  [key: string]: any; // For attributes and content
+}
+
+export interface ParseOptions {
+  startDelimiter?: string;
+  endDelimiter?: string;
+}
+
+export function parse(text: string, options?: ParseOptions): Operation[] {
+<<<REPLACE>>>
+export interface Operation {
+  type: 'WRITE' | 'RUN' | 'SEARCH' | 'TASKS';
+  line: number;
+  [key: string]: any; // For attributes and content
+}
+
+export interface ParseOptions {
+  startDelimiter?: string;
+  endDelimiter?: string;
+}
+
+export function parse(text: string, options?: ParseOptions): Operation[] {
 <<<END>>>
+
+## 2. Look for debug statements in test files
+
+Let me check the parser.test.ts file for debug statements:Let me check the actual file location:The debug output you're seeing is coming from the parser.ts file itself, not the test files. It seems my previous edits didn't fully remove all the debug statements. Let me search for any remaining console.log statements:I see the issue - the debug statements are still in the uploaded parser.ts file. Let me create a clean version of parser.ts without any debug statements:
+
+<<<EXPLANATION>>>
+Remove ALL remaining console.log debug statements from parser.ts
+<<<FILE>>>
+main/core/src/parser.ts
+<<<OVERWRITE>>>
+export interface Operation {
+  type: 'WRITE' | 'RUN' | 'SEARCH' | 'TASKS';
+  line: number;
+  [key: string]: any; // For attributes and content
+}
+
+export interface ParseOptions {
+  startDelimiter?: string;
+  endDelimiter?: string;
+}
+
+export function parse(text: string, options?: ParseOptions): Operation[] {
+  const startDelim = options?.startDelimiter || '<---';
+  const endDelim = options?.endDelimiter || '--->';
+  
+  // Escape special regex characters
+  const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const startEscaped = escapeRegex(startDelim);
+  const endEscaped = escapeRegex(endDelim);
+  
+  // Build regex for markers: ^<---(\w+)(\s+(.*))?--->$
+  const markerRegex = new RegExp(`^${startEscaped}(\\w+)(\\s+(.*))?${endEscaped}$`);
+  
+  // Helper to check if an operation is valid for current state
+  const isValidOperationForState = (opName: string, currentState: string | null): boolean => {
+    if (!currentState) {
+      // At top level - only operation starters are valid
+      return ['WRITE', 'RUN', 'SEARCH', 'TASKS'].includes(opName);
+    } else if (currentState === 'TASKS') {
+      // In TASKS - operation starters and END are valid
+      return ['WRITE', 'RUN', 'SEARCH', 'END'].includes(opName);
+    } else if (currentState === 'WRITE' || currentState === 'RUN') {
+      return opName === 'END';
+    } else if (currentState === 'SEARCH_PATTERN') {
+      return ['TO', 'REPLACE', 'END'].includes(opName);
+    } else if (currentState === 'SEARCH_TO') {
+      return opName === 'REPLACE';
+    } else if (currentState === 'SEARCH_REPLACEMENT') {
+      return opName === 'END';
+    }
+    return false;
+  };
+  
+  const lines = text.split(/\r\n|\r|\n/);
+  const operations: Operation[] = [];
+  
+  let lineNum = 1;
+  let state: string | null = null;
+  let currentOp: Operation | null = null;
+  let contentBuffer: string[] = [];
+  let insideTasks = false;
+  let tasksOp: Operation | null = null;
+  
+  // For SEARCH operations
+  let searchPattern: string[] = [];
+  let searchTo: string[] = [];
+  let searchReplacement: string[] = [];
+  
+  for (const line of lines) {
+    // Check if this could be a marker
+    let isMarker = false;
+    let markerMatch: RegExpMatchArray | null = null;
+    
+    if (line.startsWith(startDelim)) {
+      markerMatch = line.match(markerRegex);
+      
+      if (markerMatch) {
+        const opName = markerMatch[1];
+        
+        // Determine if this is a valid state-transition marker for current state
+        if (!state || state === 'TASKS') {
+          // Not in content block - all valid markers accepted
+          isMarker = true;
+        } else if (state === 'WRITE' || state === 'RUN') {
+          // Only END is valid
+          isMarker = opName === 'END';
+        } else if (state === 'SEARCH_PATTERN') {
+          // TO, REPLACE, END are valid
+          isMarker = ['TO', 'REPLACE', 'END'].includes(opName);
+        } else if (state === 'SEARCH_TO') {
+          // Only REPLACE is valid
+          isMarker = opName === 'REPLACE';
+        } else if (state === 'SEARCH_REPLACEMENT') {
+          // Only END is valid
+          isMarker = opName === 'END';
+        }
+      } else {
+        // Line starts with delimiter but doesn't match pattern
+        // Check if this looks like a marker with trailing content
+        // Build a regex that matches up to and including the end delimiter
+        const partialMarkerRegex = new RegExp(`^${startEscaped}(\\w+)(\\s+(.*))?${endEscaped}`);
+        const partialMatch = line.match(partialMarkerRegex);
+        
+        if (partialMatch) {
+          const opName = partialMatch[1];
+          
+          // Check if this would be a valid state-transition marker for current state
+          const wouldBeValidMarker = isValidOperationForState(opName, state);
+          
+          // If it would be a valid marker but has trailing content, that's an error
+          if (wouldBeValidMarker && line.length > partialMatch[0].length) {
+            throw new Error(`Line ${lineNum}: Content not allowed on marker line`);
+          }
+        }
+        
+        if (!state || state === 'TASKS') {
+          // At top level - this is an error
+          throw new Error(`Line ${lineNum}: Malformed marker`);
+        }
+        // In content block - treat as literal content
+      }
+    }
+    
+    if (isMarker && markerMatch) {
+      const match = markerMatch;
+      
+      const opName = match[1];
+      const attrString = match[3] || '';
+      
+      // Handle END marker
+      if (opName === 'END') {
+        if (!state || !currentOp) {
+          throw new Error(`Line ${lineNum}: END marker without active operation`);
+        }
+        
+        // END markers cannot have attributes
+        if (attrString.trim()) {
+          throw new Error(`Line ${lineNum}: END marker cannot have attributes`);
+        }
+        
+        // Complete current operation
+        if (state === 'WRITE' || state === 'RUN') {
+          currentOp.content = contentBuffer.join('\n');
+        } else if (state === 'SEARCH_REPLACEMENT') {
+          currentOp.pattern = searchPattern.join('\n');
+          if (searchTo.length > 0) {
+            currentOp.to = searchTo.join('\n');
+          }
+          currentOp.replacement = searchReplacement.join('\n');
+        } else if (state === 'TASKS' && currentOp === tasksOp) {
+          // Ending TASKS block
+          operations.push(tasksOp!);
+          tasksOp = null;
+          insideTasks = false;
+          state = null;
+          currentOp = null;
+          contentBuffer = [];
+          searchPattern = [];
+          searchTo = [];
+          searchReplacement = [];
+          lineNum++;
+          continue;
+        }
+        
+        // If inside TASKS, add to operations array
+        if (insideTasks && state !== 'TASKS' && tasksOp) {
+          // Ending a nested operation inside TASKS
+          tasksOp.operations!.push(currentOp);
+          state = 'TASKS';
+          currentOp = tasksOp; // Restore currentOp to TASKS
+        } else if (!insideTasks) {
+          // Ending a top-level operation
+          operations.push(currentOp);
+          state = null;
+          currentOp = null;
+        }
+        contentBuffer = [];
+        searchPattern = [];
+        searchTo = [];
+        searchReplacement = [];
+      }
+      // Handle operation markers
+      else if (['WRITE', 'RUN', 'SEARCH', 'TASKS'].includes(opName)) {
+        // Check for TASKS nesting
+        if (opName === 'TASKS' && insideTasks) {
+          throw new Error(`Line ${lineNum}: TASKS cannot be nested`);
+        }
+        
+        // Check if operation is valid in current context
+        if (state !== null && state !== 'TASKS') {
+          throw new Error(`Line ${lineNum}: ${opName} marker not valid in ${state.replace(/_/g, ' ')} operation`);
+        }
+        
+        currentOp = { type: opName as Operation['type'], line: lineNum };
+        
+        // Parse attributes if present
+        if (attrString) {
+          const attrs = parseAttributes(attrString, lineNum);
+          Object.assign(currentOp, attrs);
+        }
+        
+        if (opName === 'TASKS') {
+          currentOp.operations = [];
+          tasksOp = currentOp;
+          insideTasks = true;
+          state = 'TASKS';
+        } else {
+          state = opName === 'SEARCH' ? 'SEARCH_PATTERN' : opName;
+        }
+      }
+      // Handle TO marker (only valid in SEARCH)
+      else if (opName === 'TO') {
+        if (state !== 'SEARCH_PATTERN') {
+          const stateStr = state === null ? 'null' : state.replace(/_/g, ' ');
+          throw new Error(`Line ${lineNum}: TO marker not valid in ${stateStr} operation`);
+        }
+        state = 'SEARCH_TO';
+      }
+      // Handle REPLACE marker (only valid in SEARCH)
+      else if (opName === 'REPLACE') {
+        if (state !== 'SEARCH_PATTERN' && state !== 'SEARCH_TO') {
+          const stateStr = state === null ? 'null' : state.replace(/_/g, ' ');
+          throw new Error(`Line ${lineNum}: REPLACE marker not valid in ${stateStr} operation`);
+        }
+        state = 'SEARCH_REPLACEMENT';
+      }
+      else {
+        throw new Error(`Line ${lineNum}: Unknown operation: ${opName}`);
+      }
+    } else {
+      // Not a marker - treat as content if in content state
+      if (state && currentOp && state !== 'TASKS') {
+        if (state === 'SEARCH_PATTERN') {
+          searchPattern.push(line);
+        } else if (state === 'SEARCH_TO') {
+          searchTo.push(line);
+        } else if (state === 'SEARCH_REPLACEMENT') {
+          searchReplacement.push(line);
+        } else {
+          contentBuffer.push(line);
+        }
+      } else if ((!state || state === 'TASKS') && line.startsWith(startDelim)) {
+        // At top level or in TASKS, and line starts with delimiter but wasn't recognized as valid marker
+        throw new Error(`Line ${lineNum}: Malformed marker`);
+      }
+    }
+    
+    lineNum++;
+  }
+  
+  // Check for unterminated operations
+  if (state && currentOp) {
+    // Get original operation name for error message
+    let opType = state;
+    if (state.startsWith('SEARCH')) {
+      opType = 'SEARCH';
+    } else if (state === 'TASKS' && tasksOp) {
+      throw new Error(`Line ${tasksOp.line}: Unterminated TASKS operation`);
+    }
+    throw new Error(`Line ${currentOp.line}: Unterminated ${opType} operation`);
+  }
+  
+  return operations;
+}
+
+function parseAttributes(attrString: string, lineNum: number): Record<string, string> {
+  const attrs: Record<string, string> = {};
+  let i = 0;
+  
+  while (i < attrString.length) {
+    // Skip whitespace
+    while (i < attrString.length && /\s/.test(attrString[i])) {
+      i++;
+    }
+    
+    if (i >= attrString.length) break;
+    
+    // Read attribute name
+    const nameStart = i;
+    while (i < attrString.length && !/[\s=]/.test(attrString[i])) {
+      i++;
+    }
+    
+    if (i === nameStart) {
+      throw new Error(`Line ${lineNum}: Invalid attribute syntax`);
+    }
+    
+    const name = attrString.slice(nameStart, i);
+    
+    // Skip whitespace
+    while (i < attrString.length && /\s/.test(attrString[i])) {
+      i++;
+    }
+    
+    // Expect equals sign
+    if (i >= attrString.length || attrString[i] !== '=') {
+      throw new Error(`Line ${lineNum}: Expected '=' after attribute name`);
+    }
+    i++; // skip =
+    
+    // Skip whitespace
+    while (i < attrString.length && /\s/.test(attrString[i])) {
+      i++;
+    }
+    
+    // Read quoted value
+    if (i >= attrString.length) {
+      throw new Error(`Line ${lineNum}: Missing attribute value`);
+    }
+    
+    const quote = attrString[i];
+    if (quote !== '"' && quote !== "'") {
+      throw new Error(`Line ${lineNum}: Unquoted attribute value`);
+    }
+    i++; // skip opening quote
+    
+    // Read value with escape handling
+    let value = '';
+    while (i < attrString.length) {
+      const char = attrString[i];
+      
+      if (char === '\\' && i + 1 < attrString.length) {
+        const nextChar = attrString[i + 1];
+        if (nextChar === quote || nextChar === '\\') {
+          value += nextChar;
+          i += 2;
+        } else {
+          // Other escapes are literal
+          value += char;
+          i++;
+        }
+      } else if (char === quote) {
+        i++; // skip closing quote
+        break;
+      } else {
+        value += char;
+        i++;
+      }
+    }
+    
+    // Check if we found closing quote
+    if (i > attrString.length || attrString[i - 1] !== quote) {
+      throw new Error(`Line ${lineNum}: Unterminated quoted value`);
+    }
+    
+    // Check for duplicate attributes
+    if (attrs.hasOwnProperty(name)) {
+      throw new Error(`Line ${lineNum}: Duplicate attribute: ${name}`);
+    }
+    
+    attrs[name] = value;
+  }
+  
+  return attrs;
+}
+<<<END>>>
+
+Now the code should be clean:
+1. All debug console.log statements have been removed from parser.ts
+2. The Operation type is properly exported 
+3. The index.ts file correctly imports the types
+
+The tests should now run without any debug output cluttering the results.

@@ -57,9 +57,6 @@ export function parse(text: string, options?: ParseOptions): Operation[] {
   let searchReplacement: string[] = [];
   
   for (const line of lines) {
-    console.log(`Line ${lineNum}: "${line}"`);
-    console.log(`  State: ${state}, insideTasks: ${insideTasks}, currentOp: ${currentOp ? currentOp.type : 'null'}`);
-    
     // Check if this could be a marker
     let isMarker = false;
     let markerMatch: RegExpMatchArray | null = null;
@@ -89,9 +86,6 @@ export function parse(text: string, options?: ParseOptions): Operation[] {
         }
       } else {
         // Line starts with delimiter but doesn't match pattern
-        console.log(`  Marker regex failed to match`);
-        console.log(`  Current state: ${state}`);
-        
         // Check if this looks like a marker with trailing content
         // Build a regex that matches up to and including the end delimiter
         const partialMarkerRegex = new RegExp(`^${startEscaped}(\\w+)(\\s+(.*))?${endEscaped}`);
@@ -99,26 +93,21 @@ export function parse(text: string, options?: ParseOptions): Operation[] {
         
         if (partialMatch) {
           const opName = partialMatch[1];
-          console.log(`  Found partial marker: ${opName}`);
           
           // Check if this would be a valid state-transition marker for current state
           const wouldBeValidMarker = isValidOperationForState(opName, state);
-          console.log(`  Would be valid marker: ${wouldBeValidMarker}`);
           
           // If it would be a valid marker but has trailing content, that's an error
           if (wouldBeValidMarker && line.length > partialMatch[0].length) {
-            console.log(`  Has trailing content after valid marker`);
             throw new Error(`Line ${lineNum}: Content not allowed on marker line`);
           }
         }
         
         if (!state || state === 'TASKS') {
           // At top level - this is an error
-          console.log(`  Throwing malformed marker error`);
           throw new Error(`Line ${lineNum}: Malformed marker`);
         }
         // In content block - treat as literal content
-        console.log(`  In content block - treating as literal content`);
       }
     }
     
@@ -130,12 +119,6 @@ export function parse(text: string, options?: ParseOptions): Operation[] {
       
       // Handle END marker
       if (opName === 'END') {
-        console.log(`  Processing END marker:`);
-        console.log(`    state: ${state}`);
-        console.log(`    currentOp: ${currentOp ? currentOp.type : 'null'}`);
-        console.log(`    insideTasks: ${insideTasks}`);
-        console.log(`    tasksOp: ${tasksOp ? tasksOp.type : 'null'}`);
-        
         if (!state || !currentOp) {
           throw new Error(`Line ${lineNum}: END marker without active operation`);
         }
@@ -156,7 +139,6 @@ export function parse(text: string, options?: ParseOptions): Operation[] {
           currentOp.replacement = searchReplacement.join('\n');
         } else if (state === 'TASKS' && currentOp === tasksOp) {
           // Ending TASKS block
-          console.log(`    Ending TASKS block`);
           operations.push(tasksOp!);
           tasksOp = null;
           insideTasks = false;
@@ -173,24 +155,19 @@ export function parse(text: string, options?: ParseOptions): Operation[] {
         // If inside TASKS, add to operations array
         if (insideTasks && state !== 'TASKS' && tasksOp) {
           // Ending a nested operation inside TASKS
-          console.log(`    Adding ${currentOp.type} to TASKS operations`);
           tasksOp.operations!.push(currentOp);
           state = 'TASKS';
           currentOp = tasksOp; // Restore currentOp to TASKS
-          console.log(`    State changed to: ${state}, currentOp restored to TASKS`);
         } else if (!insideTasks) {
           // Ending a top-level operation
-          console.log(`    Adding ${currentOp.type} to top-level operations`);
           operations.push(currentOp);
           state = null;
           currentOp = null;
-          console.log(`    State changed to: ${state}`);
         }
         contentBuffer = [];
         searchPattern = [];
         searchTo = [];
         searchReplacement = [];
-        console.log(`    After END: state=${state}, currentOp=${currentOp}`);
       }
       // Handle operation markers
       else if (['WRITE', 'RUN', 'SEARCH', 'TASKS'].includes(opName)) {

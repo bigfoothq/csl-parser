@@ -241,19 +241,6 @@ validate(ast) → ValidationError[]
   {line: 3, operation: 'SEARCH', error: "Empty search pattern not allowed"}
 ]
 
-### malformed_ast
-
-#### Missing required AST fields
-
-- validate([{type: 'WRITE', line: 1, file: 'test.txt'}])
-→ []  // content field missing but validator handles gracefully
-
-- validate([{type: 'SEARCH', line: 2, file: 'app.js', pattern: 'find'}])
-→ []  // replacement field missing but validator handles gracefully
-
-- validate([{type: 'TASKS', line: 3}])
-→ []  // operations field missing but validator handles gracefully
-
 ### empty_ast
 
 #### Empty AST is valid

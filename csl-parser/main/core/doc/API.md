@@ -1,12 +1,10 @@
-20250123
-
 # CSL Parser API
 
 ## Functions
 
 ### parse(text, options?)
 
-Parses CSL text into an Abstract Syntax Tree (AST).
+Parses and validates CSL text, returning both AST and validation errors.
 
 **Parameters:**
 - `text` (string): The CSL text to parse
@@ -15,52 +13,59 @@ Parses CSL text into an Abstract Syntax Tree (AST).
   - `endDelimiter` (string): Custom end delimiter (default: `--->`)
 
 **Returns:** 
-- Array of Operation objects (see TYPES.md)
+```typescript
+{
+  ast: Operation[],              // Parsed AST (see TYPES.md)
+  validationErrors: ValidationError[]  // Semantic errors (empty if valid)
+}
+```
 
 **Throws:** 
-- Error with message format: `"Line {lineNumber}: {errorMessage}"`
-- Throws on first syntax error encountered
+- Error on syntax errors with format: `"Line {lineNumber}: {errorMessage}"`
+- Does NOT throw on validation errors (returns them in result)
 
 **Example:**
 ```javascript
-import { parse } from './src/parser.js';
+import { parse } from './index.js';
 
-const ast = parse(cslText);
-// or with custom delimiters
-const ast = parse(cslText, {
-  startDelimiter: '<<<',
-  endDelimiter: '>>>'
-});
+try {
+  const { ast, validationErrors } = parse(cslText);
+  
+  if (validationErrors.length > 0) {
+    // Handle validation errors - can still execute valid operations
+    validationErrors.forEach(error => {
+      console.warn(`Line ${error.line}: ${error.error}`);
+    });
+  }
+  
+  // Execute operations that don't have validation errors
+  executeAst(ast, validationErrors);
+} catch (error) {
+  // Syntax error - cannot proceed
+  console.error('Parse failed:', error.message);
+}
 ```
 
-### validate(ast)
+### ValidationError Structure
 
-Validates an AST for semantic correctness.
-
-**Parameters:**
-- `ast` (Array): The AST returned by parse()
-
-**Returns:**
-- Array of ValidationError objects (empty if valid)
-
-**ValidationError structure:**
-```javascript
+```typescript
 {
-  line: number,        // Line number from AST
-  operation: string,   // Operation type
-  error: string,       // Error message
-  field?: string       // Optional field name
+  line: number,           // Line number from AST
+  operation: string,      // Operation type
+  error: string,          // Error message
+  field?: string,         // Optional field name
+  parentTaskLine?: number // Line of parent TASKS (if nested)
 }
 ```
 
-**Example:**
-```javascript
-import { validate } from './src/validator.js';
+## Execution Model
 
-const errors = validate(ast);
-if (errors.length > 0) {
-  errors.forEach(error => {
-    console.error(`Line ${error.line}: ${error.error}`);
-  });
-}
-```
+- **Syntax errors**: Fatal - entire file is unparseable
+- **Validation errors**: Non-fatal - skip failed operations
+- **TASKS atomicity**: If any operation in a TASKS block has validation errors, skip the entire TASKS block
+
+## Internal Functions
+
+The following functions are used internally and not part of the public API:
+- `parser.parse()` - Internal parsing logic
+- `validator.validate()` - Internal validation logic
