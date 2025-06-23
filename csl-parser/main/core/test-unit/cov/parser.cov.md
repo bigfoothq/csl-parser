@@ -1,13 +1,3 @@
-=== PROCESSED: 2025-06-22 22:10:32 ===
-SUCCESS Block 1: Overwrote /Users/stuart/repos/csl-parser/csl-parser/main/core/test-unit/cov/parser.cov.md
-===
-
-<<<EXPLANATION>>>
-Complete regeneration of parser.cov.md with all updates applied
-
-<<<FILE>>>
-csl-parser/main/core/test-unit/cov/parser.cov.md
-<<<OVERWRITE>>>
 # parser.cov.md
 
 parse(text) → AST or throws Error
@@ -20,19 +10,19 @@ parse(
 <---WRITE file="test.txt"--->
 hello world
 <---END--->
-) → [{type: 'WRITE', file: 'test.txt', content: 'hello world\n', line: 1}]
+) → [{type: 'WRITE', file: 'test.txt', content: 'hello world', line: 1}]
 
 parse(
 <---RUN--->
 npm install
 <---END--->
-) → [{type: 'RUN', content: 'npm install\n', line: 1}]
+) → [{type: 'RUN', content: 'npm install', line: 1}]
 
 parse(
 <---WRITE file="log.txt" append="true"--->
 new entry
 <---END--->
-) → [{type: 'WRITE', file: 'log.txt', append: 'true', content: 'new entry\n', line: 1}]
+) → [{type: 'WRITE', file: 'log.txt', append: 'true', content: 'new entry', line: 1}]
 
 ### Search Operations
 
@@ -42,19 +32,19 @@ parse(
 <---REPLACE--->
 "debug": true
 <---END--->
-) → [{type: 'SEARCH', file: 'config.json', pattern: '"debug": false\n', replacement: '"debug": true\n', line: 1}]
+) → [{type: 'SEARCH', file: 'config.json', pattern: '"debug": false', replacement: '"debug": true', line: 1}]
 
 parse(
 <---SEARCH file="main.py"--->
 def old_func():
-    pass
+   pass
 <---TO--->
-    return None
+   return None
 <---REPLACE--->
 def new_func():
-    return 42
+   return 42
 <---END--->
-) → [{type: 'SEARCH', file: 'main.py', pattern: 'def old_func():\n    pass\n', to: '    return None\n', replacement: 'def new_func():\n    return 42\n', line: 1}]
+) → [{type: 'SEARCH', file: 'main.py', pattern: 'def old_func():\n    pass', to: '    return None', replacement: 'def new_func():\n    return 42', line: 1}]
 
 parse(
 <---SEARCH file="test.js" count="all"--->
@@ -62,7 +52,7 @@ foo
 <---REPLACE--->
 bar
 <---END--->
-) → [{type: 'SEARCH', file: 'test.js', count: 'all', pattern: 'foo\n', replacement: 'bar\n', line: 1}]
+) → [{type: 'SEARCH', file: 'test.js', count: 'all', pattern: 'foo', replacement: 'bar', line: 1}]
 
 ### TASKS
 
@@ -75,7 +65,7 @@ content a
 echo done
 <---END--->
 <---END--->
-) → [{type: 'TASKS', operations: [{type: 'WRITE', file: 'a.txt', content: 'content a\n', line: 2}, {type: 'RUN', content: 'echo done\n', line: 5}], line: 1}]
+) → [{type: 'TASKS', operations: [{type: 'WRITE', file: 'a.txt', content: 'content a', line: 2}, {type: 'RUN', content: 'echo done', line: 5}], line: 1}]
 
 ## Error Cases
 
@@ -197,19 +187,19 @@ parse(
 <---WRITE file="test\"quote.txt"--->
 content
 <---END--->
-) → [{type: 'WRITE', file: 'test"quote.txt', content: 'content\n', line: 1}]
+) → [{type: 'WRITE', file: 'test"quote.txt', content: 'content', line: 1}]
 
 parse(
 <---WRITE file='test\'quote.txt'--->
 content
 <---END--->
-) → [{type: 'WRITE', file: "test'quote.txt", content: 'content\n', line: 1}]
+) → [{type: 'WRITE', file: "test'quote.txt", content: 'content', line: 1}]
 
 parse(
 <---WRITE file="path\\with\\backslash"--->
 content
 <---END--->
-) → [{type: 'WRITE', file: 'path\\with\\backslash', content: 'content\n', line: 1}]
+) → [{type: 'WRITE', file: 'path\\with\\backslash', content: 'content', line: 1}]
 
 ### CSL Syntax in Content
 
@@ -219,7 +209,7 @@ parse(
 This is literal text
 <---END--->
 <---END--->
-) → [{type: 'WRITE', file: 'nested.csl', content: '<---WRITE file="inner"--->\nThis is literal text\n<---END--->\n', line: 1}]
+) → [{type: 'WRITE', file: 'nested.csl', content: '<---WRITE file="inner"--->\nThis is literal text\n<---END--->', line: 1}]
 
 ### Empty Values
 
@@ -227,14 +217,14 @@ parse(
 <---WRITE file=""--->
 content
 <---END--->
-) → [{type: 'WRITE', file: '', content: 'content\n', line: 1}]
+) → [{type: 'WRITE', file: '', content: 'content', line: 1}]
 
 parse(
 <---SEARCH file="test.js"--->
 pattern
 <---REPLACE--->
 <---END--->
-) → [{type: 'SEARCH', file: 'test.js', pattern: 'pattern\n', replacement: '', line: 1}]
+) → [{type: 'SEARCH', file: 'test.js', pattern: 'pattern', replacement: '', line: 1}]
 
 ### Multiple Operations
 
@@ -245,7 +235,7 @@ first
 <---WRITE file="b.txt"--->
 second
 <---END--->
-) → [{type: 'WRITE', file: 'a.txt', content: 'first\n', line: 1}, {type: 'WRITE', file: 'b.txt', content: 'second\n', line: 4}]
+) → [{type: 'WRITE', file: 'a.txt', content: 'first', line: 1}, {type: 'WRITE', file: 'b.txt', content: 'second', line: 4}]
 
 ### Whitespace Between Attributes
 
@@ -253,7 +243,7 @@ parse(
 <---WRITE   file="a.txt"     append="true"--->
 content
 <---END--->
-) → [{type: 'WRITE', file: 'a.txt', append: 'true', content: 'content\n', line: 1}]
+) → [{type: 'WRITE', file: 'a.txt', append: 'true', content: 'content', line: 1}]
 
 ### Attribute Values with Equals
 
@@ -261,12 +251,11 @@ parse(
 <---WRITE file="query=param&x=y"--->
 content
 <---END--->
-) → [{type: 'WRITE', file: 'query=param&x=y', content: 'content\n', line: 1}]
+) → [{type: 'WRITE', file: 'query=param&x=y', content: 'content', line: 1}]
 
 ### Mixed Line Endings
 
-parse('<---WRITE file="test.txt"--->\r\nline1\r\nline2\rline3\n<---END--->') → [{type: 'WRITE', file: 'test.txt', content: 'line1\r\nline2\rline3\n', line: 1}]
-
+parse('<---WRITE file="test.txt"--->\r\nline1\r\nline2\rline3\n<---END--->') → [{type: 'WRITE', file: 'test.txt', content: 'line1\r\nline2\rline3', line: 1}]
 ### Partial Markers in Content
 
 parse(
@@ -275,7 +264,7 @@ This <-- is not --> a marker
 <--- also not a marker
 --->
 <---END--->
-) → [{type: 'WRITE', file: 'test.txt', content: 'This <-- is not --> a marker\n<--- also not a marker\n--->\n', line: 1}]
+) → [{type: 'WRITE', file: 'test.txt', content: 'This <-- is not --> a marker\n<--- also not a marker\n--->', line: 1}]
 
 ### Invalid Context Markers
 
@@ -308,7 +297,7 @@ parse(
 
 ### No Trailing Newline
 
-parse("<---WRITE file=\"test.txt\"--->\ncontent<---END--->") → [{type: 'WRITE', file: 'test.txt', content: 'content', line: 1}]
+parse("<---WRITE file=\"test.txt\"--->\ncontent<---END--->") → throws "Line 2: Invalid marker format"
 
 ### Marker Format Violations
 
@@ -332,7 +321,7 @@ parse(
 <---WRITE file="test.txt"--->
 content
 <---END--->
-) → [{type: 'WRITE', file: 'test.txt', content: 'content\n', line: 3}]
+) → [{type: 'WRITE', file: 'test.txt', content: 'content', line: 3}]
 
 parse(
 <---SEARCH file="test.js"--->
@@ -353,7 +342,7 @@ content
 <---END--->
 
 more random text
-) → [{type: 'WRITE', file: 'test.txt', content: 'content\n', line: 3}]
+) → [{type: 'WRITE', file: 'test.txt', content: 'content', line: 3}]
 
 parse(
 <---TASKS--->
@@ -367,7 +356,7 @@ echo hi
 <---END--->
 text after operations
 <---END--->
-) → [{type: 'TASKS', operations: [{type: 'WRITE', file: 'a.txt', content: 'content\n', line: 3}, {type: 'RUN', content: 'echo hi\n', line: 7}], line: 1}]
+) → [{type: 'TASKS', operations: [{type: 'WRITE', file: 'a.txt', content: 'content', line: 3}, {type: 'RUN', content: 'echo hi', line: 7}], line: 1}]
 
 parse(
 text before
@@ -379,5 +368,19 @@ text between
 second
 <---END--->
 text after
-) → [{type: 'WRITE', file: 'a.txt', content: 'first\n', line: 2}, {type: 'WRITE', file: 'b.txt', content: 'second\n', line: 6}]
-<<<END>>>
+) → [{type: 'WRITE', file: 'a.txt', content: 'first', line: 2}, {type: 'WRITE', file: 'b.txt', content: 'second', line: 6}]
+
+### Newline Handling
+
+parse(
+<---WRITE file="test.txt"--->
+hello world
+
+<---END--->
+) → [{type: 'WRITE', file: 'test.txt', content: 'hello world\n', line: 1}]
+
+parse(
+<---WRITE file="test.txt"--->
+hello world
+<---END--->
+) → [{type: 'WRITE', file: 'test.txt', content: 'hello world', line: 1}]
