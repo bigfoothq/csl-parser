@@ -19,11 +19,13 @@
 Writes content to a file.
 ```
 <---WRITE file="path/to/file.txt"--->
-content to write
+content 
+  to write
 <---END--->
 
 <---WRITE file="data.csv" append="true"--->
-additional content
+additional 
+  content
 <---END--->
 ```
 
@@ -46,8 +48,10 @@ Single replacement:
 ```
 <---SEARCH file="config.json"--->
 "debug": false
+"other": false
 <---REPLACE--->
 "debug": true
+"other": true
 <---END--->
 ```
 
