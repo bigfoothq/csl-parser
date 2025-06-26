@@ -1,4 +1,24 @@
 
+
+
+
+TODO: changing to:
+
+Simple replacement:
+<replace>
+  <old>text to find</old>
+  <new>replacement text</new>
+</replace>
+Range replacement:
+<replace>
+  <from>starting text</from>
+  <to>ending text</to>
+  <with>replacement text</with>
+</replace>
+
+
+
+
 when making edit instructions, use the following format:
 
 

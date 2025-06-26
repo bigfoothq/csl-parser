@@ -1,121 +1,201 @@
+# CSL
 
-# Edit Instruction Commands
+## Commands (in order of common usage)
+- **WRITE**: Replace entire file content
+- **SEARCH/REPLACE**: Find exact text and replace (preserves whitespace)
+- **SEARCH_FROM/INCLUSIVE_TO**: Replace text section between two markers - **MOST EFFICIENT for multi-line operations**
+- **WRITE append=true**: Append to file end
+- **RUN**: Execute shell command (single line only)
+- **NODE23**: Execute Node.js code (multi-line)
 
-## Command Types:
-- WRITE: Write/replace entire file
-- WRITE append=true: Append to file
-- SEARCH/REPLACE: Find and replace content
-- SEARCH_FROM/INCLUSIVE_TO: Find section and replace
-- RUN: Execute single-line shell command
-- NODE23: Execute multi-line Node.js code
+## Best Practices
+- **For deleting or replacing multi-line blocks**: Always use SEARCH_FROM/INCLUSIVE_TO instead of SEARCH/REPLACE
+- **For small edits**: Use SEARCH/REPLACE with exact text match
+- **For new files or complete rewrites**: Use WRITE
 
-## Examples:
+## Syntax Rules
+- Each operation starts with `file:` followed by path
+- Content wrapped between `<<————COMMAND` and `<<————END` tags
+- **All content blocks can span multiple lines** (except RUN)
+- **Whitespace and indentation are preserved exactly**
+- Tags must start at beginning of line (no leading spaces)
+- `count=N` for nth occurrence (default: 1)
 
-### NODE23 (For multi-line Node.js code)
+## Examples
+
+**Replace entire file (multi-line):**
+```
 file: path/to/file.js
-<<————NODE23
-fs.readFile('myfile.js', 'utf8', (err, data) => {
-  // Process file content
-  fs.writeFile('myfile.js', newContent, () => {
-    console.log('Done');
-  });
-})
-<<————END
-when making edit instructions, use the following format:
-
-
-
-
-Line-based syntax: Command tags must start at the beginning of their own line
-
-
-random text is fine
-
-even if its right above the file line per operation block
-file: path/to/otehr/file.js
 <<————WRITE
-first line 
-  second row 
-third   line of the file 
-        and heres the fourth 
-    and heres the fifth 
- sixth and last here
-<<————END    
-
-
-file: path/to/otehr/file.js
-<<————WRITE append=true
-this will be the 7th line of the file
-<<————END 
-
-
-
-file: path/to/otehr/file.js
-<<————SEARCH count=3
-  second row 
-third   line of the file 
-        and heres the fourth 
-    and heres the fifth 
- sixth and last here
-<<————REPLACE
-this content is 
- replacing the 2nd through 5th rows  
- of the file
+function hello() {
+  console.log("Hello");
+  return true;
+}
 <<————END
+```
 
-heres another way to do search/replace that is shorter and  requires fewer output tokens. this example does exactly the same thing as the previous. 
+**Append multiple lines:**
+```
+file: path/to/file.js
+<<————WRITE append=true
+// New section
+export function newFeature() {
+  return "added";
+}
+<<————END
+```
 
-file: path/to/otehr/file.js
-<<————SEARCH_FROM  
-  second row 
+**Search and replace (exact match with whitespace):**
+```
+file: path/to/file.js
+<<————SEARCH
+  console.log("Hello");
+  return true;
+<<————REPLACE
+  console.log("Goodbye");
+  return false;
+<<————END
+```
+
+**Replace section between markers:**
+```
+file: path/to/file.js
+<<————SEARCH_FROM
+function oldFunction() {
 <<————INCLUSIVE_TO
-    and heres the fifth 
- sixth and last here
+}
 <<————REPLACE
-this content is 
- replacing the 2nd through 5th rows  
- of the file
-<<————END  
+function newFunction() {
+  // completely new implementation
+  return 42;
+}
+<<————END
+```
 
-when using SEARCH_FROM, the goal is to make the `SEARCH_FROM` and `INCLUSIVE_TO` content each as short as possible but still uniquely match the target section
-
-`count` attribute is 1 by default, if missing
-
-
-random text is fine
-
-even if its right above the file line per operation block
-file: path/to/otehr/file.js
-<<————WRITE
-first line 
-  second row 
-third   line of the file 
-        and heres the fourth 
-    and heres the fifth 
- sixth and last here
-<<————END    
-
-
-file: path/to/otehr/file.js
-<<————WRITE append=true
-this will be the 7th line of the file
-<<————END 
-
-
-single lines only for RUN, these go straight to command line (via node for path checking and cmd whitelisting ofc)
-
+**Run command (single line only):**
+```
 <<————RUN
-npm install asdf 
-<<————END 
+npm install express
+<<————END
+```
 
-NODE23 blocks allow multiple lines.  
-
+**Execute Node.js (multi-line):**
+```
 <<————NODE23
-fs.writeSync('myfile.js', "adsoifjaoif")
-fs.writeSync('myfile.js', "adsoifjaoif")
-<<————END 
+const fs = require('fs');
+const data = fs.readFileSync('input.txt', 'utf8');
+const processed = data.toUpperCase();
+fs.writeFileSync('output.txt', processed);
+console.log('Processing complete');
+<<————END
+```
+
+@#*$#&@^$*@#&^$*&@^$(*@&#^$(#@*&$^#(*@&#^@(*#&#^@$))))@#*$#&@^$*@#&^$*&@^$(*@&#^$(#@*&$^#(*@&#^@(*#&#^@$))))
+@#*$#&@^$*@#&^$*&@^$(*@&#^$(#@*&$^#(*@&#^@(*#&#^@$))))@#*$#&@^$*@#&^$*&@^$(*@&#^$(#@*&$^#(*@&#^@(*#&#^@$))))
+@#*$#&@^$*@#&^$*&@^$(*@&#^$(#@*&$^#(*@&#^@(*#&#^@$))))@#*$#&@^$*@#&^$*&@^$(*@&#^$(#@*&$^#(*@&#^@(*#&#^@$))))
+@#*$#&@^$*@#&^$*&@^$(*@&#^$(#@*&$^#(*@&#^@(*#&#^@$))))@#*$#&@^$*@#&^$*&@^$(*@&#^$(#@*&$^#(*@&#^@(*#&#^@$))))
+@#*$#&@^$*@#&^$*&@^$(*@&#^$(#@*&$^#(*@&#^@(*#&#^@$))))@#*$#&@^$*@#&^$*&@^$(*@&#^$(#@*&$^#(*@&#^@(*#&#^@$))))
+@#*$#&@^$*@#&^$*&@^$(*@&#^$(#@*&$^#(*@&#^@(*#&#^@$))))@#*$#&@^$*@#&^$*&@^$(*@&#^$(#@*&$^#(*@&#^@(*#&#^@$))))
 
 
+# CSL
+
+## Commands (in order of common usage)
+- **WRITE**: Replace entire file content
+- **FIND/REPLACE**: Find exact text and replace (preserves whitespace)
+- **FIND_FROM/FIND_TO/REPLACE**: Replace content between two markers (inclusive) - **MOST EFFICIENT for multi-line operations**
+- **WRITE append=true**: Append to file end
+- **RUN**: Execute shell command (single line only)
+- **NODE**: Execute Node.js code (multi-line)
+
+## Best Practices
+- **For deleting or replacing multi-line blocks**: Always use FIND_FROM/FIND_TO/REPLACE instead of FIND/REPLACE
+- **For small edits**: Use FIND/REPLACE with exact text match
+- **For new files or complete rewrites**: Use WRITE
+
+## Syntax Rules
+- Each operation starts with `file:` followed by path
+- Content wrapped between `<<————COMMAND` and `<<————END` tags
+- **All content blocks can span multiple lines** (except RUN)
+- **Whitespace and indentation are preserved exactly**
+- Tags must start at beginning of line (no leading spaces)
+- `count=N` for nth occurrence (default: 1)
+
+## Examples
+
+**Replace entire file (multi-line):**
+```
+file: path/to/file.js
+<<————WRITE
+function hello() {
+  console.log("Hello");
+  return true;
+}
+<<————END
+```
+
+**Append multiple lines:**
+```
+file: path/to/file.js
+<<————WRITE append=true
+// New section
+export function newFeature() {
+  return "added";
+}
+<<————END
+```
+
+**Find and replace (exact match with whitespace):**
+```
+file: path/to/file.js
+<<————FIND
+  console.log("Hello");
+  return true;
+<<————REPLACE
+  console.log("Goodbye");
+  return false;
+<<————END
+```
+
+**Replace content between markers (inclusive):**
+```
+file: path/to/file.js
+<<————FIND_FROM
+function oldFunction() {
+<<————FIND_TO
+}
+<<————REPLACE
+function newFunction() {
+  // completely new implementation
+  return 42;
+}
+<<————END
+```
+
+**Run command (single line only):**
+```
+<<————RUN
+npm install express
+<<————END
+```
+
+**Execute Node.js (multi-line):**
+```
+<<————NODE
+const fs = require('fs');
+const data = fs.readFileSync('input.txt', 'utf8');
+const processed = data.toUpperCase();
+fs.writeFileSync('output.txt', processed);
+console.log('Processing complete');
+<<————END
+```
+
+## Why these names:
+- **FIND/REPLACE** - Universally recognized from every text editor
+- **FIND_FROM/FIND_TO** - Makes it clear you're finding a range
+- **NODE** instead of NODE23 - Simpler and cleaner
+- No nested tags - keeps syntax simple and readable
+- Clear that both endpoints are included without verbose "INCLUSIVE" naming
 
 
 
