@@ -1,0 +1,96 @@
+
+when making edit instructions, use the following format:
+
+
+
+
+Line-based syntax: Command tags must start at the beginning of their own line
+
+
+random text is fine
+
+even if its right above the file line per operation block
+file: path/to/otehr/file.js
+<<————WRITE
+first line 
+  second row 
+third   line of the file 
+        and heres the fourth 
+    and heres the fifth 
+ sixth and last here
+<<————END    
+
+
+file: path/to/otehr/file.js
+<<————WRITE append=true
+this will be the 7th line of the file
+<<————END 
+
+
+
+file: path/to/otehr/file.js
+<<————SEARCH count=3
+  second row 
+third   line of the file 
+        and heres the fourth 
+    and heres the fifth 
+ sixth and last here
+<<————REPLACE
+this content is 
+ replacing the 2nd through 5th rows  
+ of the file
+<<————END
+
+heres another way to do search/replace that is shorter and  requires fewer output tokens. this example does exactly the same thing as the previous. 
+
+file: path/to/otehr/file.js
+<<————SEARCH_FROM  
+  second row 
+<<————INCLUSIVE_TO
+    and heres the fifth 
+ sixth and last here
+<<————REPLACE
+this content is 
+ replacing the 2nd through 5th rows  
+ of the file
+<<————END  
+
+when using SEARCH_FROM, the goal is to make the `SEARCH_FROM` and `INCLUSIVE_TO` content each as short as possible but still uniquely match the target section
+
+`count` attribute is 1 by default, if missing
+
+
+random text is fine
+
+even if its right above the file line per operation block
+file: path/to/otehr/file.js
+<<————WRITE
+first line 
+  second row 
+third   line of the file 
+        and heres the fourth 
+    and heres the fifth 
+ sixth and last here
+<<————END    
+
+
+file: path/to/otehr/file.js
+<<————WRITE append=true
+this will be the 7th line of the file
+<<————END 
+
+
+single lines only for RUN, these go straight to command line (via node for path checking and cmd whitelisting ofc)
+
+<<————RUN
+npm install asdf 
+<<————END 
+
+NODE23 blocks allow multiple lines.  
+
+<<————NODE23
+fs.writeSync('myfile.js', "adsoifjaoif")
+fs.writeSync('myfile.js', "adsoifjaoif")
+<<————END 
+
+
