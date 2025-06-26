@@ -1,0 +1,167 @@
+
+#!nesl/<<————-
+
+this text is outside of a nesl block (and it doens't start with `nesl:config:`) so its ignored
+
+each nesl file must contain this line somehwere "#!nesl/<<————-" to set the only configurable part, the nesl marker.  (here, it is `<<————-`)
+
+every line of contens in a nesl bock is preceeded by a `|` char for easy whitespace preservation
+
+<<————-string_1
+|multiline string 
+|  var contents.  nesl blocks always end with the special end marker 
+<<————-♦
+
+<<————-::single_line_str::here's the value it is everythign else on the line. a self closing nesl block
+
+<<————-myArray []
+|here is the first array element in a nesl block
+<<————-,
+|here is the first array element
+|
+|notice that nesl blocks are multi-line  
+<<————-,
+<<————-,
+|4th array element.  note that the 3rd array element is an empty string
+<<————-,
+|this is the 5th element of the `myArray` array.  note that nesl blocks can end with a blank line which will be preserved 
+|
+<<————-♦
+
+examples:
+
+nesl: 
+<<————-users []
+|first
+<<————-,
+|second
+<<————-,
+<<————-,
+|fourth
+<<————-♦
+
+json:
+"users": [
+  "first",
+  "second",
+  "",
+  "fourth",
+]
+
+nesl: 
+<<————-users []
+|first
+<<————-,
+<<————-♦
+
+json:
+"users": [
+  "first",
+  "",
+]
+
+nesl: 
+<<————-users []
+|only
+<<————-♦
+
+json:
+"users": [
+  "only",
+]
+
+nesl: 
+<<————-users []
+|admin
+|editor
+<<————-♦
+
+json:
+"users": [
+  "admin\neditor"
+]
+
+nesl: 
+<<————-users []
+<<————-,
+|admin
+|
+|editor
+|
+<<————-♦
+
+json:
+"users": [
+  "",
+  "admin\n\neditor\n"
+]
+
+nesl:
+<<————-myArray []
+|First element
+<<————-,
+|Second element
+<<————-,
+|Third element (empty line preserved)
+|
+<<————-♦
+
+
+json:
+"users": [
+  "First element",
+  "Second element",
+  "Third element (empty line preserved)\n",
+]
+
+
+this text and the json above it is all outside of a nesl block so its ignored
+
+<<————-myObject {}
+<<————-::single_line_attribute::here's the value it is everythign else on the line
+<<————-multi_line_attribute_var
+|asdfas
+|  asdfasdf 
+<<————-♦
+<<————-::otehrVa::7890
+<<————-string2
+|asdfas
+|  asdfasdf 
+<<————-♦
+<<————-thing3
+|asdfas
+|  asdfasdf 
+<<————-♦
+<<————-♦
+
+this text is outside of a nesl block so its ignored
+
+any whitespace on a line before nesl syntax (marker or `|`) is ignored, to allow beautification for human eyes
+<<————-{}
+    <<————-::attr1::note that objects and arrays dont have to have names
+    <<————-[]
+        |  1st 
+        <<————-,
+        | second 
+        <<————-,
+        <<————-,
+        |    fourth
+    <<————-♦
+<<————-♦
+
+<<————-string_1
+|string_1 and 
+|    string_2 are 
+|  the same 
+<<————-♦
+|this text is outside of a nesl block or tag so its ignored even tho it starts with |
+<<————-string_2
+|string_1 and 
+     |    string_2 are 
+  |  the same 
+<<————-♦
+
+
+single line vars can have specific types.  default type is `string`
+<<————-::startTime:string::here's the value it is everythign else on the line. a self closing nesl block
+<<————-::startTime:date::here's the value it is everythign else on the line. a self closing nesl block

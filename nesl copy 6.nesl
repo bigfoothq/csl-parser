@@ -1,0 +1,192 @@
+…
+check out this new markup language syntax i made. wdyt? generate a concise but complete guide on its usage. "no escape syntax langauge"
+
+in your guide, show some random examples of nesl each with equivalent toml
+
+```
+#!nesl/<<————-
+
+this text is outside of a nesl block (and it doens't start with `nesl:config:`) so its ignored
+
+each nesl file must contain this line somehwere "#!nesl/<<————-" to set the only configurable part, the nesl marker.  (here, it is `<<————-`)
+
+
+
+<<————-string_1
+-multiline string 
+|  var contents.  nesl blocks always end with the special end marker 
+<<————-♦
+
+
+other syntax things:
+`-` indicates the first line of a string value block. also denotes first line of a new array string element block
+`|` is to indicate non-first lines of any value block
+`=` indicates an element with primitive type 
+
+
+<<————-string_1
+-multiline string block with just one line
+<<————-♦
+
+<<————-single_line_str::-here's the value it is everythign else on the line. a self closing nesl block
+
+this version with two backticks is for primitive data types, not stirngs. ints, floats, dates, and primitive arrays:
+
+<<————-single_line_var::=0
+<<————-single_line_var::=false
+<<————-single_line_var::=1979-05-27T07:32:00-08:00
+<<————-single_line_var::=[1,2,false]
+
+
+<<————-myArray []
+-here is the first array element in a nesl block
+-here is the second array element
+|
+|notice that nesl blocks are multi-line, using `|` for all rows besides the first of a new array element block
+-
+-
+|4th array element.  note that the 3rd array element is an empty string
+-
+|this is the 5th element of the `myArray` array.  note that nesl blocks can end with a blank line which will be preserved 
+|
+=6
+=7777
+<<————-♦
+
+notice above that the 6th and 7th elements are primitives 
+
+examples:
+
+nesl: 
+<<————-users []
+-first
+=2
+-
+-fourth
+<<————-♦
+
+json:
+"users": [
+  "first",
+  2,
+  "",
+  "fourth",
+]
+
+nesl: 
+<<————-users []
+-first
+-
+<<————-♦
+
+json:
+"users": [
+  "first",
+  "",
+]
+
+nesl: 
+<<————-users []
+-only
+<<————-♦
+
+json:
+"users": [
+  "only",
+]
+
+nesl: 
+<<————-users []
+-
+|admin
+|editor
+<<————-♦
+
+json:
+"users": [
+  "\nadmin\neditor"
+]
+
+nesl: 
+<<————-users []
+-
+-admin
+|
+|editor
+|
+<<————-♦
+
+json:
+"users": [
+  "",
+  "admin\n\neditor\n"
+]
+
+nesl:
+<<————-myArray []
+-First element
+-Second element
+-Third element (empty line preserved)
+|
+<<————-♦
+
+
+json:
+"users": [
+  "First element",
+  "Second element",
+  "Third element (empty line preserved)\n",
+]
+
+
+this text and the json above it is all outside of a nesl block so its ignored
+
+<<————-myObject {}
+<<————-single_line_attribute::-here's the value it is everythign else on the line
+<<————-multi_line_attribute_var
+-asdfas
+|  asdfasdf 
+<<————-♦
+<<————-otehrVal::=7890
+<<————-string2
+-asdfas
+|  asdfasdf 
+<<————-♦
+<<————-thing3
+-asdfas
+|  asdfasdf 
+<<————-♦
+<<————-♦
+
+this text is outside of a nesl block so its ignored
+
+any whitespace on a line before nesl syntax (marker or `|`) is ignored, to allow beautification for human eyes
+<<————-{}
+    <<————-attr1::-note that objects and arrays dont have to have names
+    <<————-[]
+        -  1st 
+        -second 
+        -
+        -    fourth
+        =5
+    <<————-♦
+<<————-♦
+
+<<————-string_1
+-string_1 and 
+|    string_2 are 
+|  the same 
+<<————-♦
+|this text is outside of a nesl block or tag so its ignored even tho it starts with |
+<<————-string_2
+-string_1 and 
+     |    string_2 are 
+  |  the same 
+<<————-♦
+
+
+
+```
+
+
+give me some complex nesl including complex arrays like multiline, empty vlaues, weird spacing... show some random examples of nesl each with equivalent toml

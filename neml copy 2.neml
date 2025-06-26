@@ -1,0 +1,160 @@
+
+neml:config:marker::<<————-
+
+this text is outside of a neml block (and it doens't start with `neml:config:`) so its ignored
+
+every line of contens in a neml bock is preceeded by a `|` char for easy whitespace preservation
+
+<<————-string_1
+|multiline string 
+|  var contents.  neml blocks always end with the special end marker 
+<<————-♦
+
+<<————-::single_line_str::here's the value it is everythign else on the line. a self closing neml block
+
+<<————-myArray []
+|here is the first array element in a neml block
+<<————-
+|here is the first array element
+|
+|notice that neml blocks are multi-line  
+<<————-
+<<————-
+|4th array element.  note that the 3rd array element is an empty string
+<<————-
+|this is the 5th element of the `myArray` array.  note that neml blocks can end with a blank line which will be preserved 
+|
+<<————-♦
+
+examples:
+
+neml: 
+<<————-users []
+|first
+<<————-
+|second
+<<————-
+<<————-
+|fourth
+<<————-♦
+
+json:
+"users": [
+  "first",
+  "second",
+  "",
+  "fourth",
+]
+
+neml: 
+<<————-users []
+|first
+<<————-
+<<————-♦
+
+json:
+"users": [
+  "first",
+  "",
+]
+
+neml: 
+<<————-users []
+|only
+<<————-♦
+
+json:
+"users": [
+  "only",
+]
+
+neml: 
+<<————-users []
+|admin
+|editor
+<<————-♦
+
+json:
+"users": [
+  "admin\neditor"
+]
+
+neml: 
+<<————-users []
+<<————-
+|admin
+|
+|editor
+|
+<<————-♦
+
+json:
+"users": [
+  "",
+  "admin\n\neditor\n"
+]
+
+neml:
+<<————-myArray []
+|First element
+<<————-
+|Second element
+<<————-
+|Third element (empty line preserved)
+|
+<<————-♦
+
+
+json:
+"users": [
+  "First element",
+  "Second element",
+  "Third element (empty line preserved)\n",
+]
+
+
+this text and the json above it is all outside of a neml block so its ignored
+
+<<————-myObject {}
+<<————-::single_line_attribute::here's the value it is everythign else on the line
+<<————-multi_line_attribute_var
+|asdfas
+|  asdfasdf 
+<<————-♦
+<<————-::otehrVa::7890
+<<————-string2
+|asdfas
+|  asdfasdf 
+<<————-♦
+<<————-thing3
+|asdfas
+|  asdfasdf 
+<<————-♦
+<<————-♦
+
+this text is outside of a neml block so its ignored
+
+
+<<————-{}
+<<————-::attr1::note that objects and arrays dont have to have names
+<<————-[]
+|  1st 
+<<————-
+| second 
+<<————-
+<<————-
+|    fourth. note that whitespace before the nelm marker is ignored
+<<————-♦
+<<————-♦
+
+<<————-string_1
+|asdfas
+|  asdfasdf 
+<<————-♦
+|this text is outside of a neml block or tag so its ignored
+<<————-string_2
+|asdfas
+|  asdfasdf 
+<<————-♦
+
+

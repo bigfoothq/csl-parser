@@ -1,0 +1,13 @@
+[
+  "First Entry",
+  "Second Entry",
+  "Third Entry",
+  {
+    "ke-y1": "value1",
+    "k!e-y1": "value1",
+    "ke:-y1": "value1",
+    "ke-y@": "value1",
+    "ke-#y1": "value1",
+    "k$ey2": "value2"
+  }
+]

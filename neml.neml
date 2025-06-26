@@ -1,0 +1,70 @@
+
+@@neml:config:marker::<<————-
+
+this text is outside of a neml block (and it doens't start with `@@neml`) so its ignored
+
+
+<<————-string_1
+multiline string 
+  var contents.  neml blocks always end with the special end marker 
+<<————-♦
+
+<<————-myArray []
+here is the first array element in a neml block
+<<————-
+here is the first array element
+
+notice that neml blocks are multi-line  
+<<————-
+<<————-
+4th array element.  note that the 3rd array element is an empty string
+<<————-
+this is the 5th element of the `myArray` array.  note that neml blocks can end with a blank line which will be preserved 
+
+<<————-♦
+
+this text is outside of a neml block so its ignored
+
+<<————-myObject {}
+single_line_attribute::here's the value it is everythign else on the line
+<<————-multi_line_attribute_var
+asdfas
+  asdfasdf 
+<<————-♦
+otehrVa::7890
+<<————-string2
+asdfas
+  asdfasdf 
+<<————-♦
+<<————-thing3
+asdfas
+  asdfasdf 
+<<————-♦
+<<————-♦
+
+this text is outside of a neml block so its ignored
+
+
+<<————-{}
+attr1::note that objects and arrays dont have to have names
+<<————-[]
+  1st 
+<<————-
+ second 
+<<————-
+<<————-
+    fourth. note that whitespace before the nelm marker is ignored
+<<————-♦
+<<————-♦
+
+<<————-string_1
+asdfas
+  asdfasdf 
+<<————-♦
+this text is outside of a neml block so its ignored
+<<————-string_2
+asdfas
+  asdfasdf 
+<<————-♦
+
+
