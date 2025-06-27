@@ -4,7 +4,7 @@ check out this new markup language syntax i made, wdyt? generate a concise but c
 in your guide, show some random examples of nesl each with equivalent toml
 
 ```
-#!nesl/<<————-
+#nesl<<————-
 
 this text is outside of a nesl block (and it doens't start with `nesl:config:`) so its ignored
 
