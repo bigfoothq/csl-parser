@@ -71,6 +71,9 @@ continues here""",
 .brown, packed
 -
 -Eggs
+-
+-
+-
 =3
 -Milk
 .whole
@@ -82,6 +85,9 @@ items = [
 brown, packed""",
   "",
   "Eggs",
+  "",
+  "",
+  "",
   3,
   """Milk
 whole"""
