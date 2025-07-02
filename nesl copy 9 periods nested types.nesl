@@ -2,14 +2,15 @@
 
 ## Syntax
 - `<<————-name` - Start block
-- `<<————-♦` - End block
+- `<<————-♦` - End block, followed by closing tag of block type(", ], or })
 - `::-` - Inline string
 - `::=` - Inline primitive
 - `-` - String element/value
 - `.` - String continuation only
 - `=` - Primitive element (arrays only)
-- `[]` - Array
-- `{}` - Object
+- `"` - String
+- `[` - Array
+- `{` - Object
 
 ## Key Rules
 - **Each `-` or `=` IMMEDIATELY ENDS the previous element and starts a NEW one**
@@ -28,10 +29,10 @@
 
 <<————-name::-John Doe
 <<————-age::=42
-<<————-bio
+<<————-bio "
 -Software developer
 .Living in SF
-<<————-♦
+<<————-♦ "
 ```
 ```toml
 name = "John Doe"
@@ -43,7 +44,7 @@ Living in SF"""
 ### Arrays - Element Boundaries
 ```nesl
 #nesl<<————-
-<<————-data []
+<<————-data [
 -First string
 =42
 -Multi-line
@@ -51,7 +52,7 @@ Living in SF"""
 =3.14
 -
 .New element after primitive
-<<————-♦
+<<————-♦ ]
 ```
 ```toml
 data = [
@@ -66,7 +67,7 @@ continues here""",
 
 ### Arrays - Common Pattern
 ```nesl
-<<————-items []
+<<————-items [
 -Sugar
 .brown, packed
 -
@@ -77,7 +78,7 @@ continues here""",
 =3
 -Milk
 .whole
-<<————-♦
+<<————-♦ ]
 ```
 ```toml
 items = [
@@ -96,15 +97,15 @@ whole"""
 
 ### Objects with Nested Arrays
 ```nesl
-<<————-config {}
+<<————-config {
 <<————-host::-localhost
 <<————-port::=8080
-<<————-features []
+<<————-features [
 -auth
 -cache
 .with TTL
-<<————-♦
-<<————-♦
+<<————-♦ ]
+<<————-♦ }
 ```
 ```toml
 [config]
@@ -119,17 +120,17 @@ with TTL"""
 
 ### Complete Example
 ```nesl
-<<————-recipe {}
+<<————-recipe {
 <<————-name::-Cookies
-<<————-ingredients []
+<<————-ingredients [
 -2 cups flour
 -
-1 cup sugar
+.1 cup sugar
 .granulated
 =350
 -grams chocolate
-<<————-♦
-<<————-♦
+<<————-♦ ]
+<<————-♦ }
 ```
 ```toml
 [recipe]
@@ -146,13 +147,13 @@ granulated""",
 
 ### Array Element Boundaries - Critical
 ```nesl
-<<————-tracks []
+<<————-tracks [
 -Song Title
 .additional info
 .more details
 =180
 -Next Song
-<<————-♦
+<<————-♦ ]
 ```
 ```toml
 tracks = [

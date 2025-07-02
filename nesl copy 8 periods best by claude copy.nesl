@@ -1,0 +1,177 @@
+# NESL Specification
+
+## Syntax
+- `<<————-name` - Start block
+- `<<————-♦` - End block
+- `::-` - Inline string
+- `::=` - Inline primitive
+- `-` - String element/value
+- `.` - String continuation only
+- `=` - Primitive element (arrays only)
+- `[]` - Array
+- `{}` - Object
+
+## Key Rules
+- **Each `-` or `=` IMMEDIATELY ENDS the previous element and starts a NEW one**
+- `.` can ONLY follow `-` or `.` lines
+- Primitives (`=`) cannot have continuations
+- Leading whitespace before `<<————-`, `.`,  and `-` is ignored
+- .nesl file contains line `#nesl<<————-` somewhere
+
+---
+
+## Examples
+
+### Basic Types
+```nesl
+#nesl<<————-
+
+<<————-name::-John Doe
+<<————-age::=42
+<<————-bio
+-Software developer
+.Living in SF
+<<————-♦
+```
+```toml
+name = "John Doe"
+age = 42
+bio = """Software developer
+Living in SF"""
+```
+
+### Arrays - Element Boundaries
+```nesl
+#nesl<<————-
+<<————-data []
+-First string
+=42
+-Multi-line
+.continues here
+=3.14
+-
+.New element after primitive
+<<————-♦
+```
+```toml
+data = [
+  "First string",
+  42,
+  """Multi-line
+continues here""",
+  3.14,
+  "\nNew element after primitive"
+]
+```
+
+### Arrays - Common Pattern
+```nesl
+<<————-items []
+-Sugar
+.brown, packed
+-
+-Eggs
+-
+-
+-
+=3
+-Milk
+.whole
+<<————-♦
+```
+```toml
+items = [
+  """Sugar
+brown, packed""",
+  "",
+  "Eggs",
+  "",
+  "",
+  "",
+  3,
+  """Milk
+whole"""
+]
+```
+
+### Objects with Nested Arrays
+```nesl
+<<————-config {}
+<<————-host::-localhost
+<<————-port::=8080
+<<————-features []
+-auth
+-cache
+.with TTL
+<<————-♦
+<<————-♦
+```
+```toml
+[config]
+host = "localhost"
+port = 8080
+features = [
+  "auth",
+  """cache
+with TTL"""
+]
+```
+
+### Complete Example
+```nesl
+<<————-recipe {}
+<<————-name::-Cookies
+<<————-ingredients []
+-2 cups flour
+-
+.1 cup sugar
+.granulated
+=350
+-grams chocolate
+<<————-♦
+<<————-♦
+```
+```toml
+[recipe]
+name = "Cookies"
+ingredients = [
+  "2 cups flour",
+  """
+1 cup sugar
+granulated""",
+  350,
+  "grams chocolate"
+]
+```
+
+### Array Element Boundaries - Critical
+```nesl
+<<————-tracks []
+-Song Title
+.additional info
+.more details
+=180
+-Next Song
+<<————-♦
+```
+```toml
+tracks = [
+  """Song Title
+additional info
+more details""",
+  180,
+  "Next Song"
+]
+```
+
+**NOT:**
+```toml
+# WRONG interpretation:
+tracks = [
+  "Song Title",
+  """additional info
+more details""",
+  180,
+  "Next Song"
+]
+```
