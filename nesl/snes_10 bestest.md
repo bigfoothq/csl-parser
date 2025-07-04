@@ -99,7 +99,24 @@ Result: `"  hohoho\n  lalala "`
 
 be sure to notice each whitespace char throughout raw strings
 
+### More Examples
 
+```
+// Example E: multiline string with blank first/last lines
+sdfg = (
+    R"""|  |"""
+    R"""| asdf grjeiog awef|"""
+    R"""||"""
+    R"""| gerg ergo wefw8uef  |"""
+    R"""|  |"""
+)
+```
+
+```json
+{
+    "sdfg": "  \n asdf grjeiog awef\n\n gerg ergo wefw8uef  \n  "
+}
+```
 ## Rules
 
 1. Comments: Full-line only, start with `//`
