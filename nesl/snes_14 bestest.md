@@ -1,11 +1,11 @@
 # NESL - NO escape Syntax Language Specification
 
-NESL is a string-only data format with one operator (`=`) and type indicators that control value parsing.
+NESL is a string-only data format with one assignment operator (`=`) and type indicators that control value parsing.
 
 ## Type Indicators
 
 - `:` - Trimmed string (removes leading/trailing whitespace)
-- `R"""(` - Verbatim (v) Raw string (preserves ALL characters after `R"""(` including ALL leading and trailing whitespace) until the closing syntax `)"""` which must be immediately followed by a newline
+- `R"""pv(` - pv for "preserve_verbatim" Raw string (preserves ALL characters after `R"""pv(` including ALL leading and trailing whitespace) until the closing syntax `)pv"""` which must be immediately followed by a newline
 - `{` - Object
 - `[` - Array
 - `(` - Multiline string
@@ -26,11 +26,11 @@ name =:  John Doe
 ```
 Result: `"John Doe"`
 
-### Raw String (`R"""(` ... `)"""`)
+### Raw String (`R"""pv(` ... `)pv"""\n`)
 ```
 o1 = {
-    a1 =R"""(/usr1:/"local"/bin      )"""
-    a2 =R"""(  /usr:/local/bin)"""
+    a1 =R"""pv(/usr1:/"local"/bin      )pv"""
+    a2 =R"""pv(  /usr:/local/bin)pv"""
 } 
 ```
 
@@ -42,7 +42,7 @@ o1 = {
 ```
 ```
 o = {
-    x =R"""(    )"""
+    x =R"""pv(    )pv"""
 } 
 ```
 Result: 
@@ -62,11 +62,11 @@ user = {
 
 ### Array (`[`)
 
-**Multi-line arrays**: ONLY raw strings (`R"""(`)
+**Multi-line arrays**: ONLY raw strings (`R"""pv(`)
 ```
 items = [
-    R"""(apple)"""
-    R"""(banana  )"""
+    R"""pv(apple)pv"""
+    R"""pv(banana  )pv"""
 ]
 ```
 
@@ -76,12 +76,14 @@ tags = [:dev, :staging, :prod]
 ```
 
 ### Multiline String (`(`)
-Each line must start with `R"""(` and end with `)"""` followed immediately by the newline or `EOF`. The `R"""(` and `)"""` are stripped, content preserved, lines joined with `\n`.  no characters in the line are ever escaped
+Each line must start with `R"""pv(` and end with `)pv"""` followed immediately by the newline or `EOF`. The `R"""pv(` and `)pv"""` are stripped, content preserved, lines joined with `\n`.  no characters in the line are ever escaped.  if the closing delimiter (`)pv"""`) is found within the text and there are any chars after it, it is ignored.  closing delimiter is only valid at the very end of the line.
+
+
 ```
 text = (
-    R"""(Line 1)"""
-    R"""(   Line "2: indented)"""
-    R"""(    )"""
+    R"""pv(Line 1)pv"""
+    R"""pv(   Line "2: indented)pv"""
+    R"""pv(    )pv"""
 )
 ```
 Result: `Line 1\n   Line "2 indented\n    `
@@ -91,11 +93,11 @@ blank lines not allowed in multiline strings
 
 ```
 text = (
-    R"""(  hohoho)"""
-    R"""(  lalala )"""
+    R"""pv(hohoho)pv"""
+    R"""pv(lalala )pv"""
 )
 ```
-Result: `"  hohoho\n  lalala "`
+Result: `"hohoho\nlalala "`
 
 be sure to notice each whitespace char throughout raw strings
 
@@ -104,11 +106,11 @@ be sure to notice each whitespace char throughout raw strings
 ```
 // Example E: multiline string with blank first/last lines
 sdfg = (
-    R"""|  |"""
-    R"""| asdf grjeiog awef|"""
-    R"""||"""
-    R"""| gerg ergo wefw8uef  |"""
-    R"""|  |"""
+    R"""pv(  )pv"""
+    R"""pv( asdf grjeiog awef)pv"""
+    R"""pv()pv"""
+    R"""pv( gerg ergo wefw8uef  )pv"""
+    R"""pv(  )pv"""
 )
 ```
 
@@ -124,16 +126,16 @@ sdfg = (
 3. All values are strings (type conversion is application-level)
 4. No escape sequences
 5. Arrays cannot mix formats (all inline or all multi-line)
-6. Arrays cannot mix string types (all `:` or all `R"""(`)
+6. Arrays cannot mix string types (all `:` or all `R"""pv(`)
 7. Empty values allowed: `empty =: ` and `empty =:` produces `""` 
 8. Nesting allowed to arbitrary depth
 
 ## Invalid Constructs
 
 - Inline comments: `key =: value // comment`
-- Mixed array formats: `[R"""(raw, :trim]`
+- Mixed array formats: `[R"""pv(raw, :trim]`
 - Trimmed strings in multi-line arrays: `[\n    :trim\n]`
-- Raw strings in inline arrays: `[R"""(raw, R"""(raw2]`
+- Raw strings in inline arrays: `[R"""pv(raw, R"""pv(raw2]`
 
 ## REMINDER
 
@@ -141,6 +143,7 @@ IMPORTANT!!!!
 
 - be very careful to precisely preserve all whitespace at the start of raw strings
 - never escape any characters ever
+- the raw string closing delimiter is ONLY valid when at the END of the line!
 
 ^^ IMPORTANT!!!!
 ------------------
@@ -154,10 +157,10 @@ and also  do these
 
 // Example 2: Weird array elements (empty, spaces, colon prefix)
 values = [
-    R"""(first)"""
-    R"""()"""
-    R"""(   spaced   )"""
-    R"""(   raw:with:colons)"""
+    R"""pv(first)pv"""
+    R"""pv()pv"""
+    R"""pv(   spaced   )pv"""
+    R"""pv(   raw:with:colons)pv"""
 ]
 
 
@@ -168,9 +171,9 @@ a = {
     b = {
         c = [
             (
-                R"""( first)"""
-                R"""()"""
-                R"""(second  )"""
+                R"""pv( first)pv"""
+                R"""pv()pv"""
+                R"""pv(second  )pv"""
             )
         ]
     }
@@ -179,20 +182,20 @@ a = {
 
 // Example E: multiline string with blank first/last lines
 poem = (
-    R"""(  )"""
-    R"""( Roses are red)"""
-    R"""()"""
-    R"""( Violets are blue  )"""
-    R"""(  )"""
+    R"""pv(  )pv"""
+    R"""pv( Roses are red)pv"""
+    R"""pv()pv"""
+    R"""pv( Violets are blue  )pv"""
+    R"""pv(  )pv"""
 )
 
 // Example E: multiline string with blank first/last lines
 poem = (
-    R"""(  )"""
-    R"""( One """more""" line)"""
-    R"""()"""
-    R"""( and  "yet)""" another 'neat' """line"""  )"""
-    R"""(  )"""
+    R"""pv(  )pv"""
+    R"""pv( One """more""" line)pv"""
+    R"""pv()pv"""
+    R"""pv(and  "yet)pv another 'neat' """line"""  )pv"""
+    R"""pv(  )pv"""
 )
 
 
@@ -201,13 +204,13 @@ empty =:
 list = [ ]
 data = {
     x =:
-    y =R"""(  )"""
+    y =R"""pv(  )pv"""
 }
 
 and then format this as a single multiine nesl string attribute:
 
 ```
-   "hi" (i said to "her)""". "we can't go there", she replied 
+   "hi" (i said to "her)pv. "we can't go there", she replied 
 "oh its you". 
 welll...
       summer was over.

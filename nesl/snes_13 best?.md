@@ -5,7 +5,7 @@ NESL is a string-only data format with one operator (`=`) and type indicators th
 ## Type Indicators
 
 - `:` - Trimmed string (removes leading/trailing whitespace)
-- `R"""(` - Verbatim (v) Raw string (preserves ALL characters after `R"""(` including ALL leading and trailing whitespace) until the closing syntax `)"""` which must be immediately followed by a newline
+- `<<<<R"""(` - Verbatim (v) Raw string (preserves ALL characters after `<<<<R"""(` including ALL leading and trailing whitespace) until the closing syntax `)""">>>>` which must be immediately followed by a newline
 - `{` - Object
 - `[` - Array
 - `(` - Multiline string
@@ -26,11 +26,11 @@ name =:  John Doe
 ```
 Result: `"John Doe"`
 
-### Raw String (`R"""(` ... `)"""`)
+### Raw String (`<<<<R"""(` ... `)""">>>>`)
 ```
 o1 = {
-    a1 =R"""(/usr1:/"local"/bin      )"""
-    a2 =R"""(  /usr:/local/bin)"""
+    a1 =<<<<R"""(/usr1:/"local"/bin      )""">>>>
+    a2 =<<<<R"""(  /usr:/local/bin)""">>>>
 } 
 ```
 
@@ -42,7 +42,7 @@ o1 = {
 ```
 ```
 o = {
-    x =R"""(    )"""
+    x =<<<<R"""(    )""">>>>
 } 
 ```
 Result: 
@@ -62,11 +62,11 @@ user = {
 
 ### Array (`[`)
 
-**Multi-line arrays**: ONLY raw strings (`R"""(`)
+**Multi-line arrays**: ONLY raw strings (`<<<<R"""(`)
 ```
 items = [
-    R"""(apple)"""
-    R"""(banana  )"""
+    <<<<R"""(apple)""">>>>
+    <<<<R"""(banana  )""">>>>
 ]
 ```
 
@@ -76,12 +76,12 @@ tags = [:dev, :staging, :prod]
 ```
 
 ### Multiline String (`(`)
-Each line must start with `R"""(` and end with `)"""` followed immediately by the newline or `EOF`. The `R"""(` and `)"""` are stripped, content preserved, lines joined with `\n`.  no characters in the line are ever escaped
+Each line must start with `<<<<R"""(` and end with `)""">>>>` followed immediately by the newline or `EOF`. The `<<<<R"""(` and `)""">>>>` are stripped, content preserved, lines joined with `\n`.  no characters in the line are ever escaped
 ```
 text = (
-    R"""(Line 1)"""
-    R"""(   Line "2: indented)"""
-    R"""(    )"""
+    <<<<R"""(Line 1)""">>>>
+    <<<<R"""(   Line "2: indented)""">>>>
+    <<<<R"""(    )""">>>>
 )
 ```
 Result: `Line 1\n   Line "2 indented\n    `
@@ -91,8 +91,8 @@ blank lines not allowed in multiline strings
 
 ```
 text = (
-    R"""(  hohoho)"""
-    R"""(  lalala )"""
+    <<<<R"""(  hohoho)""">>>>
+    <<<<R"""(  lalala )""">>>>
 )
 ```
 Result: `"  hohoho\n  lalala "`
@@ -124,16 +124,16 @@ sdfg = (
 3. All values are strings (type conversion is application-level)
 4. No escape sequences
 5. Arrays cannot mix formats (all inline or all multi-line)
-6. Arrays cannot mix string types (all `:` or all `R"""(`)
+6. Arrays cannot mix string types (all `:` or all `<<<<R"""(`)
 7. Empty values allowed: `empty =: ` and `empty =:` produces `""` 
 8. Nesting allowed to arbitrary depth
 
 ## Invalid Constructs
 
 - Inline comments: `key =: value // comment`
-- Mixed array formats: `[R"""(raw, :trim]`
+- Mixed array formats: `[<<<<R"""(raw, :trim]`
 - Trimmed strings in multi-line arrays: `[\n    :trim\n]`
-- Raw strings in inline arrays: `[R"""(raw, R"""(raw2]`
+- Raw strings in inline arrays: `[<<<<R"""(raw, <<<<R"""(raw2]`
 
 ## REMINDER
 
@@ -154,10 +154,10 @@ and also  do these
 
 // Example 2: Weird array elements (empty, spaces, colon prefix)
 values = [
-    R"""(first)"""
-    R"""()"""
-    R"""(   spaced   )"""
-    R"""(   raw:with:colons)"""
+    <<<<R"""(first)""">>>>
+    <<<<R"""()""">>>>
+    <<<<R"""(   spaced   )""">>>>
+    <<<<R"""(   raw:with:colons)""">>>>
 ]
 
 
@@ -168,9 +168,9 @@ a = {
     b = {
         c = [
             (
-                R"""( first)"""
-                R"""()"""
-                R"""(second  )"""
+                <<<<R"""( first)""">>>>
+                <<<<R"""()""">>>>
+                <<<<R"""(second  )""">>>>
             )
         ]
     }
@@ -179,20 +179,20 @@ a = {
 
 // Example E: multiline string with blank first/last lines
 poem = (
-    R"""(  )"""
-    R"""( Roses are red)"""
-    R"""()"""
-    R"""( Violets are blue  )"""
-    R"""(  )"""
+    <<<<R"""(  )""">>>>
+    <<<<R"""( Roses are red)""">>>>
+    <<<<R"""()""">>>>
+    <<<<R"""( Violets are blue  )""">>>>
+    <<<<R"""(  )""">>>>
 )
 
 // Example E: multiline string with blank first/last lines
 poem = (
-    R"""(  )"""
-    R"""( One """more""" line)"""
-    R"""()"""
-    R"""( and  "yet)""" another 'neat' """line"""  )"""
-    R"""(  )"""
+    <<<<R"""(  )""">>>>
+    <<<<R"""( One """more""" line)""">>>>
+    <<<<R"""()""">>>>
+    <<<<R"""( and  "yet)""">>>> another 'neat' """line"""  )""">>>>
+    <<<<R"""(  )""">>>>
 )
 
 
@@ -201,13 +201,13 @@ empty =:
 list = [ ]
 data = {
     x =:
-    y =R"""(  )"""
+    y =<<<<R"""(  )""">>>>
 }
 
 and then format this as a single multiine nesl string attribute:
 
 ```
-   "hi" (i said to "her)""". "we can't go there", she replied 
+   "hi" (i said to "her)""">>>>. "we can't go there", she replied 
 "oh its you". 
 welll...
       summer was over.
