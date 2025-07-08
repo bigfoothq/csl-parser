@@ -2,6 +2,8 @@
 
 SONES (Simple Obvious No Escape Syntax) is a line-based format where each line is complete and independent.
 
+`R"""pv(` - "pv" stands for "preserve verbatim"
+
 ## Basic Syntax
 
 ### Single-line values (no newlines allowed):
@@ -83,11 +85,10 @@ note the use of hyphen to indicate array element line.
 
 ## Key Rules
 
-1. The entire `R"""pv(`...`)pv"""` must be on ONE line - no line breaks inside
-2. Everything between `R"""pv(` and `)pv"""` is literal (no escapes)
-3. ALL whitespace is preserved exactly: `R"""pv(  hi  )pv"""` = "  hi  "
-4. Empty lines in multiline: `R"""pv()pv"""`
-5. No escaping ever - `R"""pv(C:\"path"\'file'.txt)pv"""` = `C:\"path"\'file'.txt`
+1. The entire `R"""pv(`...`)pv"""\n` must be on ONE line - no line breaks inside
+2. Everything between `R"""pv(` and `)pv"""\n` is literal (no escapes)
+3. ALL whitespace is preserved exactly: `R"""pv(  hi  )pv"""\n` = "  hi  "
+5. No escaping ever - `R"""pv(C:\"path"\'file'.txt)pv"""\n` = `C:\"path"\'file'.txt`
 
 ## Complete Example
 
