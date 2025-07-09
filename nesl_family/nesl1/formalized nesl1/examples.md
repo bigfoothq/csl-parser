@@ -1086,4 +1086,186 @@ class ParseError extends Error {
 
 TODO - MUST MAKE DELIMITERS CONFIGURABLE IN NESL.  TODO !!!!
 
-as in `R"""pv(` and `)pv"""`
+as in each of these:
+
+- `R"""pv(`
+- `)pv"""`
+- `<<<<<<<<nesl1`
+- `>>>>>>>>nesl1`
+
+#############################
+
+
+# New NESL1 Decisions
+
+https://claude.ai/chat/d7ce02fc-862e-4c5f-96c9-197f29882fae
+
+### Block Wrappers
+- Blocks wrapped in `<<<<<<<<nesl1` / `>>>>>>>>nesl1` markers
+- Content between markers must be valid standalone NESL (starts with `{` or `[`)
+- No implicit objects - even wrapped blocks need explicit `{` or `[`
+- Multiple wrapped blocks in a document become an array of objects/values
+
+### Parser Architecture  
+- 2-stage: First extract blocks from mixed content, then parse NESL
+- Each wrapped block parses independently (errors don't affect other blocks)
+
+### Strictness
+- No blank lines between `}` and `>>>>>>>>nesl1` (easier to parse - just check next line)
+- Empty arrays cannot have whitespace between `[` and `]` - must be exactly `[]`
+- Whitespace-only lines in objects/arrays are ignored
+
+That's it! The main insight: wrapped blocks are just a way to embed valid NESL in mixed content. The wrapper doesn't change NESL syntax rules.
+
+## Block Wrapper Example
+
+**Input (mixed content):**
+```
+I'll help you create some files.
+
+<<<<<<<<nesl1
+{
+  operation = R"""pv(create_file)pv"""
+  path = R"""pv(/src/main.py)pv"""
+  content = R"""pv(print("hello"))pv"""
+}
+>>>>>>>>nesl1
+
+Now let's make a config:
+
+<<<<<<<<nesl1
+{
+  operation = R"""pv(create_file)pv"""
+  path = R"""pv(/config.json)pv"""
+  content = R"""pv({"debug": true})pv"""
+}
+>>>>>>>>nesl1
+```
+
+**Output (extracted NESL array):**
+```nesl
+[
+  - {
+    operation = R"""pv(create_file)pv"""
+    path = R"""pv(/src/main.py)pv"""
+    content = R"""pv(print("hello"))pv"""
+  }
+  - {
+    operation = R"""pv(create_file)pv"""
+    path = R"""pv(/config.json)pv"""
+    content = R"""pv({"debug": true})pv"""
+  }
+]
+```
+
+The block extractor:
+1. Finds each `<<<<<<<<nesl1`...`>>>>>>>>nesl1` pair
+2. Extracts the content between markers
+3. Wraps all extracted objects in an array with `-` prefixes
+
+#############################
+
+# tests
+
+ok now generate example files for FOR ONLY THESE FILES:
+
+
+```
+tests/
+  cases/
+    valid/
+      001_basic_string.nesl
+      001_basic_string.json
+      002_nested_objects.nesl
+      002_nested_objects.json
+    errors/
+      001_unterminated_string.nesl
+      001_unterminated_string.json
+```
+
+## Valid Tests
+
+### `tests/cases/valid/001_basic_string.nesl`
+```nesl
+<<<<<<<<nesl1
+{
+  message = R"""pv(hello world)pv"""
+  empty = R"""pv()pv"""
+  spaces = R"""pv(  leading and trailing  )pv"""
+}
+>>>>>>>>nesl1
+```
+
+### `tests/cases/valid/001_basic_string.json`
+```json
+[
+  {
+    "message": "hello world",
+    "empty": "",
+    "spaces": "  leading and trailing  "
+  }
+]
+```
+
+### `tests/cases/valid/002_nested_objects.nesl`
+```nesl
+<<<<<<<<nesl1
+{
+  user = {
+    name = R"""pv(Alice)pv"""
+    age = R"""pv(30)pv"""
+    address = {
+      street = R"""pv(123 Main St)pv"""
+      city = R"""pv(Wonderland)pv"""
+    }
+  }
+  tags = [
+    - R"""pv(admin)pv"""
+    - R"""pv(verified)pv"""
+  ]
+}
+>>>>>>>>nesl1
+```
+
+### `tests/cases/valid/002_nested_objects.json`
+```json
+[
+  {
+    "user": {
+      "name": "Alice",
+      "age": "30",
+      "address": {
+        "street": "123 Main St",
+        "city": "Wonderland"
+      }
+    },
+    "tags": ["admin", "verified"]
+  }
+]
+```
+
+## Error Tests
+
+### `tests/cases/errors/001_unterminated_string.nesl`
+```nesl
+<<<<<<<<nesl1
+{
+  good = R"""pv(this is fine)pv"""
+  bad = R"""pv(this string never ends
+  another = R"""pv(unreachable)pv"""
+}
+>>>>>>>>nesl1
+```
+
+### `tests/cases/errors/001_unterminated_string.json`
+```json
+{
+  "errors": [
+    {
+      "line": 4,
+      "code": "E001",
+      "message": "Unterminated string literal"
+    }
+  ]
+}
+```
